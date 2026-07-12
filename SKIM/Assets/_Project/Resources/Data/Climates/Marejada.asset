@@ -1,0 +1,43 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97b63a2982a3c744898b45e5ac138ae8, type: 3}
+  m_Name: Marejada
+  m_EditorClassIdentifier: 
+  ClimateName: Marejada
+  UnlockDistanceMeters: 12000
+  DifficultyRating: 4
+  Harmonics:
+  - Amplitude: 0.9
+    WaveLength: 14
+    AngularFrequency: 0.5
+    InitialPhase: 0
+  - Amplitude: 0.55
+    WaveLength: 7
+    AngularFrequency: 0.9
+    InitialPhase: 0
+  - Amplitude: 0.3
+    WaveLength: 3.8
+    AngularFrequency: 1.6
+    InitialPhase: 0
+  - Amplitude: 0.18
+    WaveLength: 2
+    AngularFrequency: 2.8
+    InitialPhase: 0
+  - Amplitude: 0.1
+    WaveLength: 1.2
+    AngularFrequency: 4.5
+    InitialPhase: 0
+  ClimateMultiplier: 2
+  WaterSurfaceColor: {r: 0.03, g: 0.1, b: 0.16, a: 1}
+  WaterDepthColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}
+  SkyHorizonColor: {r: 0.12, g: 0.19, b: 0.31, a: 1}
+  AtmosphereColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}

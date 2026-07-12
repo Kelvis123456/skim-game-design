@@ -1,0 +1,31 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 97b63a2982a3c744898b45e5ac138ae8, type: 3}
+  m_Name: Calma
+  m_EditorClassIdentifier: 
+  ClimateName: Calma
+  UnlockDistanceMeters: 0
+  DifficultyRating: 1
+  Harmonics:
+  - Amplitude: 0.35
+    WaveLength: 12
+    AngularFrequency: 0.4
+    InitialPhase: 0
+  - Amplitude: 0.20
+    WaveLength: 7
+    AngularFrequency: 0.7
+    InitialPhase: 0.8
+  ClimateMultiplier: 1
+  WaterSurfaceColor: {r: 0, g: 0.77, b: 0.8, a: 1}
+  WaterDepthColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}
+  SkyHorizonColor: {r: 0.55, g: 0.71, b: 0.83, a: 1}
+  AtmosphereColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}
