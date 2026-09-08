@@ -41,7 +41,8 @@ MonoBehaviour:
     AngularFrequency: 5
     InitialPhase: 0
   ClimateMultiplier: 2.5
-  WaterSurfaceColor: {r: 0.02, g: 0.06, b: 0.09, a: 1}
-  WaterDepthColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}
-  SkyHorizonColor: {r: 0.06, g: 0.1, b: 0.16, a: 1}
-  AtmosphereColor: {r: 0.04, g: 0.09, b: 0.16, a: 1}
+  WaterSurfaceColor: {r: 0.02, g: 0.039, b: 0.078, a: 1}
+  WaterDepthColor: {r: 0.008, g: 0.02, b: 0.031, a: 1}
+  WaterCrestColor: {r: 0.102, g: 0.29, b: 0.353, a: 1}
+  SkyHorizonColor: {r: 0.016, g: 0.027, b: 0.039, a: 1}
+  AtmosphereColor: {r: 0.008, g: 0.016, b: 0.039, a: 1}
