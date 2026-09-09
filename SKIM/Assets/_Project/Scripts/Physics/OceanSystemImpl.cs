@@ -15,6 +15,7 @@ public class OceanSystemImpl : MonoBehaviour, IOceanSystem
     Vector3[] _vertices;
     float _sessionTime;
     Material _mat;
+    Material _skyMat;
 
     public ClimateData CurrentClimate => _currentClimate;
     public float SessionTime => _sessionTime;
@@ -31,12 +32,9 @@ public class OceanSystemImpl : MonoBehaviour, IOceanSystem
 
     void CreateMaterial()
     {
-        // Try shaders in priority order; first non-null wins
-        var shader = Shader.Find("Universal Render Pipeline/Unlit")
-                  ?? Shader.Find("Universal Render Pipeline/Lit")
-                  ?? Shader.Find("Universal Render Pipeline/Simple Lit")
-                  ?? Shader.Find("Unlit/Color")
-                  ?? Shader.Find("Standard");
+        var shader = Shader.Find("SKIM/Water")
+                  ?? Shader.Find("Universal Render Pipeline/Unlit")
+                  ?? Shader.Find("Unlit/Color");
 
         if (shader == null)
         {
@@ -44,18 +42,55 @@ public class OceanSystemImpl : MonoBehaviour, IOceanSystem
             return;
         }
 
-        var teal = new Color(0f, 0.77f, 0.8f);
         var mat = new Material(shader);
-
-        // URP shaders use _BaseColor; built-in use _Color
-        if (shader.name.StartsWith("Universal Render Pipeline"))
-            mat.SetColor("_BaseColor", teal);
-        else
-            mat.color = teal;
-
         GetComponent<MeshRenderer>().material = mat;
         _mat = mat;
+
+        ApplyClimateVisuals(_currentClimate);
         Debug.Log($"[Ocean] Using shader: {shader.name}");
+    }
+
+    // Pushes a climate's documented palette into the water material and the sky.
+    void ApplyClimateVisuals(ClimateData climate)
+    {
+        if (climate == null || _mat == null) return;
+
+        if (_mat.shader != null && _mat.shader.name == "SKIM/Water")
+        {
+            _mat.SetColor("_SurfaceColor", climate.WaterSurfaceColor);
+            _mat.SetColor("_DepthColor", climate.WaterDepthColor);
+            _mat.SetColor("_CrestColor", climate.WaterCrestColor);
+            _mat.SetColor("_HorizonColor", climate.SkyHorizonColor);
+            _mat.SetFloat("_WaveAmp", TotalWaveAmplitude(climate));
+        }
+        else
+        {
+            _mat.SetColor("_BaseColor", climate.WaterSurfaceColor);
+        }
+
+        ApplySky(climate);
+    }
+
+    void ApplySky(ClimateData climate)
+    {
+        var skyShader = Shader.Find("SKIM/GradientSky");
+        if (skyShader == null) return;
+
+        if (_skyMat == null || _skyMat.shader != skyShader)
+        {
+            _skyMat = new Material(skyShader);
+            RenderSettings.skybox = _skyMat;
+        }
+
+        _skyMat.SetColor("_TopColor", climate.AtmosphereColor);
+        _skyMat.SetColor("_HorizonColor", climate.SkyHorizonColor);
+    }
+
+    static float TotalWaveAmplitude(ClimateData climate)
+    {
+        float sum = 0f;
+        foreach (var w in climate.Harmonics) sum += w.Amplitude;
+        return Mathf.Max(sum, 0.01f);
     }
 
     void Update()
@@ -97,21 +132,38 @@ public class OceanSystemImpl : MonoBehaviour, IOceanSystem
 
     IEnumerator TransitionTo(ClimateData target, float duration)
     {
-        var startWater = _mat?.GetColor("_WaterColor") ?? Color.cyan;
-        var startSky = _mat?.GetColor("_SkyColor") ?? Color.blue;
+        var from = _currentClimate;
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
             elapsed += Time.deltaTime;
             float t = Mathf.SmoothStep(0f, 1f, elapsed / duration);
-            _mat?.SetColor("_WaterColor", Color.Lerp(startWater, target.WaterSurfaceColor, t));
-            _mat?.SetColor("_SkyColor", Color.Lerp(startSky, target.SkyHorizonColor, t));
+            LerpVisuals(from, target, t);
             yield return null;
         }
 
         _currentClimate = target;
+        ApplyClimateVisuals(target);
         RandomizePhases();
+    }
+
+    void LerpVisuals(ClimateData from, ClimateData to, float t)
+    {
+        if (_mat == null || to == null) return;
+        if (from == null) { ApplyClimateVisuals(to); return; }
+
+        _mat.SetColor("_SurfaceColor", Color.Lerp(from.WaterSurfaceColor, to.WaterSurfaceColor, t));
+        _mat.SetColor("_DepthColor", Color.Lerp(from.WaterDepthColor, to.WaterDepthColor, t));
+        _mat.SetColor("_CrestColor", Color.Lerp(from.WaterCrestColor, to.WaterCrestColor, t));
+        _mat.SetColor("_HorizonColor", Color.Lerp(from.SkyHorizonColor, to.SkyHorizonColor, t));
+        _mat.SetFloat("_WaveAmp", Mathf.Lerp(TotalWaveAmplitude(from), TotalWaveAmplitude(to), t));
+
+        if (_skyMat != null)
+        {
+            _skyMat.SetColor("_TopColor", Color.Lerp(from.AtmosphereColor, to.AtmosphereColor, t));
+            _skyMat.SetColor("_HorizonColor", Color.Lerp(from.SkyHorizonColor, to.SkyHorizonColor, t));
+        }
     }
 
     void RandomizePhases()

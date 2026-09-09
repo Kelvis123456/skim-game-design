@@ -17,6 +17,8 @@ public class ClimateData : ScriptableObject
     [Header("Visual - Water")]
     public Color WaterSurfaceColor = new Color(0f, 0.77f, 0.8f);
     public Color WaterDepthColor = new Color(0.04f, 0.09f, 0.16f);
+    // Bioluminescent reflection that rides the wave crests — dims as climates worsen.
+    public Color WaterCrestColor = new Color(0f, 0.77f, 0.8f);
     public Color SkyHorizonColor = new Color(0.55f, 0.71f, 0.83f);
     public Color AtmosphereColor = new Color(0.04f, 0.09f, 0.16f);
 

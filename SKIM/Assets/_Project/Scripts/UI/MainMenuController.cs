@@ -11,6 +11,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] TMP_Text _climateLabel;
 
     [Header("Panels")]
+    [SerializeField] GameObject _hudRoot;
     [SerializeField] GameObject _mainPanel;
     [SerializeField] GameObject _stoneSelectorPanel;
     [SerializeField] GameObject _climateSelectorPanel;
@@ -32,6 +33,11 @@ public class MainMenuController : MonoBehaviour
         _prog  = ServiceLocator.Get<IProgressionSystem>();
         _ocean = ServiceLocator.Get<IOceanSystem>();
 
+        // The menu owns the screen until the player taps LANZAR, so a stray drag
+        // behind it can't fire a launch.
+        ServiceLocator.Get<IInputController>().IsEnabled = false;
+        if (_hudRoot != null) _hudRoot.SetActive(false);
+
         RefreshStats();
 
         _launchButton?.onClick.AddListener(StartGame);
@@ -51,6 +57,8 @@ public class MainMenuController : MonoBehaviour
             _climateLabel.text = _ocean.CurrentClimate.ClimateName.ToUpper();
     }
 
+    public void ShowMainPanel() => ShowPanel(_mainPanel);
+
     void ShowPanel(GameObject target)
     {
         foreach (var p in new[] { _mainPanel, _stoneSelectorPanel, _climateSelectorPanel,
@@ -63,6 +71,7 @@ public class MainMenuController : MonoBehaviour
         if (_mainPanel != null) StartCoroutine(PopOut(_mainPanel.transform, () =>
         {
             gameObject.SetActive(false);
+            if (_hudRoot != null) _hudRoot.SetActive(true);
             ServiceLocator.Get<IInputController>().IsEnabled = true;
         }));
     }
