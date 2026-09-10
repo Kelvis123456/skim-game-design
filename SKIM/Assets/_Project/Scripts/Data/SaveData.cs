@@ -14,6 +14,19 @@ public class SaveData
     public DailyChallengeProgress LastDailyChallenge;
     public long LastSaveTimestamp;
     public bool VibrationEnabled = true;
+    public bool ReduceEffects;
+
+    // A list, not a Dictionary — JsonUtility silently serializes Dictionary
+    // fields as empty (see EquippedSkins above, which already hits this).
+    public List<StatRecord> StoneRecords = new();
+    public List<StatRecord> ClimateRecords = new();
+
+    [System.Serializable]
+    public class StatRecord
+    {
+        public string Id;
+        public float BestDistance;
+    }
 
     [System.Serializable]
     public class DailyChallengeProgress

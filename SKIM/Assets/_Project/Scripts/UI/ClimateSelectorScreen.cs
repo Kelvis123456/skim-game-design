@@ -33,7 +33,7 @@ public class ClimateSelectorScreen : MonoBehaviour
 
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
             if (desc) desc.text = isUnlocked
-                ? $"{climate.Harmonics.Length} olas  ×{climate.ClimateMultiplier:F1} score"
+                ? $"{climate.Harmonics.Length} olas  ×{climate.ClimateMultiplier:F1} score  ·  Récord: {_prog.BestDistanceForClimate(climate.ClimateName):0.0}m"
                 : $"Desbloquea a {climate.UnlockDistanceMeters:N0}m";
 
             var lockIcon = row.transform.Find("Lock");

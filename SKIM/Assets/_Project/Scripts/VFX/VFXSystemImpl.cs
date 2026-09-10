@@ -205,8 +205,11 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
         _rings.Enqueue(ring);
     }
 
+    static bool ReduceEffects => ServiceLocator.TryGet<IProgressionSystem>(out var p) && p.ReduceEffects;
+
     public void SpawnImpactSplash(Vector3 pos, float force)
     {
+        if (ReduceEffects) return;
         int count = Mathf.RoundToInt(Mathf.Lerp(3f, 8f, Mathf.Clamp01(force / 12f)));
         var emitParams = new ParticleSystem.EmitParams { position = pos };
         for (int i = 0; i < count; i++)
@@ -319,14 +322,17 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
 
     IEnumerator RecordEffectRoutine(float dist)
     {
-        var spawnPos = new Vector3(dist, 0.1f, 0f);
-        var emitParams = new ParticleSystem.EmitParams { position = spawnPos };
-        for (int i = 0; i < 8; i++)
+        if (!ReduceEffects)
         {
-            float angle = i / 8f * Mathf.PI * 2f;
-            emitParams.velocity = new Vector3(Mathf.Cos(angle) * 1.2f, Random.Range(2f, 3.5f), Mathf.Sin(angle) * 1.2f);
-            emitParams.startSize = 0.08f;
-            _starPS.Emit(emitParams, 1);
+            var spawnPos = new Vector3(dist, 0.1f, 0f);
+            var emitParams = new ParticleSystem.EmitParams { position = spawnPos };
+            for (int i = 0; i < 8; i++)
+            {
+                float angle = i / 8f * Mathf.PI * 2f;
+                emitParams.velocity = new Vector3(Mathf.Cos(angle) * 1.2f, Random.Range(2f, 3.5f), Mathf.Sin(angle) * 1.2f);
+                emitParams.startSize = 0.08f;
+                _starPS.Emit(emitParams, 1);
+            }
         }
 
         if (_pbLine != null)

@@ -65,13 +65,35 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
         set => _data.VibrationEnabled = value;
     }
 
+    public bool ReduceEffects
+    {
+        get => _data.ReduceEffects;
+        set => _data.ReduceEffects = value;
+    }
+
     public void RegisterLaunch(LaunchResult result)
     {
         _data.TotalAccumulatedDistance += result.Distance;
         if (result.Distance > _data.AllTimeRecord) _data.AllTimeRecord = result.Distance;
         _data.AllTimeSessionScore += result.Score;
         UpdateDailyChallenge(result);
+
+        if (_selectedStone != null) UpdateRecord(_data.StoneRecords, _selectedStone.StoneName, result.Distance);
+        if (_selectedClimate != null) UpdateRecord(_data.ClimateRecords, _selectedClimate.ClimateName, result.Distance);
     }
+
+    static void UpdateRecord(List<SaveData.StatRecord> records, string id, float distance)
+    {
+        var rec = records.Find(r => r.Id == id);
+        if (rec == null) { records.Add(new SaveData.StatRecord { Id = id, BestDistance = distance }); return; }
+        if (distance > rec.BestDistance) rec.BestDistance = distance;
+    }
+
+    public float BestDistanceForStone(string stoneId) =>
+        _data.StoneRecords.Find(r => r.Id == stoneId)?.BestDistance ?? 0f;
+
+    public float BestDistanceForClimate(string climateId) =>
+        _data.ClimateRecords.Find(r => r.Id == climateId)?.BestDistance ?? 0f;
 
     // ─────────────────────────── DAILY CHALLENGE ───────────────────────
 

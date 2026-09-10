@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using TMPro;
 
 // GDD §2.5/§7.3 — floating scoring zones the stone must skip through.
 // Regenerated fresh for every launch, same spirit as the procedural ocean:
@@ -63,6 +64,18 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
         marker.transform.localScale = new Vector3(ZONE_HALF_WIDTH * 2f, 0.015f, ZONE_HALF_WIDTH * 2f);
         marker.GetComponent<Renderer>().material = MakeMarkerMaterial(category);
 
+        // Colorblind accessibility (GDD §15): category is never color-only —
+        // a label spells it out too.
+        var labelGO = new GameObject("Label");
+        labelGO.transform.SetParent(marker.transform, false);
+        labelGO.transform.localPosition = new Vector3(0f, 1.2f, 0f);
+        labelGO.transform.localScale = new Vector3(1f / (ZONE_HALF_WIDTH * 2f), 1f, 1f / (ZONE_HALF_WIDTH * 2f));
+        var label = labelGO.AddComponent<TextMeshPro>();
+        label.text = CategoryLabel(category);
+        label.fontSize = 3f;
+        label.alignment = TextAlignmentOptions.Center;
+        label.color = Color.white;
+
         zone.Marker = marker;
         _zones.Add(zone);
     }
@@ -83,6 +96,15 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
         else mat.color = translucent;
         return mat;
     }
+
+    static string CategoryLabel(BonusZoneCategory category) => category switch
+    {
+        BonusZoneCategory.Green   => "+200",
+        BonusZoneCategory.Blue    => "+500",
+        BonusZoneCategory.Gold    => "+900",
+        BonusZoneCategory.Rainbow => "+1500",
+        _ => ""
+    };
 
     static Color CategoryColor(BonusZoneCategory category) => category switch
     {

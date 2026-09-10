@@ -30,7 +30,7 @@ public class StoneSelectorScreen : MonoBehaviour
 
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
             if (desc) desc.text = unlocked
-                ? $"Rebote: {stone.ReboundCoefficient:F2}  Spin: {stone.SpinSensitivity:F2}"
+                ? $"Rebote: {stone.ReboundCoefficient:F2}  Spin: {stone.SpinSensitivity:F2}  ·  Récord: {_prog.BestDistanceForStone(stone.StoneName):0.0}m"
                 : $"Desbloquea a {stone.UnlockDistanceMeters:N0}m acumulados";
 
             var lockIcon = row.transform.Find("Lock");

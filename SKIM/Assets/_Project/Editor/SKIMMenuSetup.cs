@@ -188,16 +188,18 @@ public static class SKIMMenuSetup
 
         Label(panel.transform, "ACCESIBILIDAD", 26f, MUTED, new Vector2(-330f, -630f), new Vector2(400f, 40f),
               TextAlignmentOptions.Left);
-        var a11yCard = Card(panel.transform, "A11yCard", new Vector2(0f, -690f), new Vector2(900f, 150f), _card20);
-        var vibration = ToggleRow(a11yCard.transform, "Vibración", new Vector2(0f, 0f), true);
+        var a11yCard = Card(panel.transform, "A11yCard", new Vector2(0f, -690f), new Vector2(900f, 200f), _card20);
+        var vibration = ToggleRow(a11yCard.transform, "Vibración", new Vector2(0f, 40f), true);
+        var reduceFx  = ToggleRow(a11yCard.transform, "Reducir efectos", new Vector2(0f, -40f), false);
 
         var deleteBtn = TextButton(panel.transform, "DeleteData", "Eliminar datos", Hex("E74C3C"),
-                                   new Vector2(0f, -880f), new Vector2(500f, 80f));
+                                   new Vector2(0f, -930f), new Vector2(500f, 80f));
 
         var screen = panel.AddComponent<SettingsScreen>();
         Wire(screen, "_musicSlider", music);
         Wire(screen, "_sfxSlider", sfx);
         Wire(screen, "_vibrationToggle", vibration);
+        Wire(screen, "_reduceEffectsToggle", reduceFx);
         Wire(screen, "_deleteDataButton", deleteBtn);
 
         BackButton(panel.transform);

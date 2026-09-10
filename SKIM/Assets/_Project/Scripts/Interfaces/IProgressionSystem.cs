@@ -14,7 +14,10 @@ public interface IProgressionSystem
     StoneData SelectedStone { get; set; }
     ClimateData SelectedClimate { get; set; }
     bool VibrationEnabled { get; set; }
+    bool ReduceEffects { get; set; }
     DailyChallengeInfo CurrentDailyChallenge { get; }
+    float BestDistanceForStone(string stoneId);
+    float BestDistanceForClimate(string climateId);
     void Save();
     void Load();
     void ResetData();
