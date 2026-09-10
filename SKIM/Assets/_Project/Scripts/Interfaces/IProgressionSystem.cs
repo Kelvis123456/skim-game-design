@@ -16,6 +16,7 @@ public interface IProgressionSystem
     bool VibrationEnabled { get; set; }
     bool ReduceEffects { get; set; }
     bool PermanentAssist { get; set; }
+    bool HasCompletedTutorial { get; set; }
     DailyChallengeInfo CurrentDailyChallenge { get; }
     float BestDistanceForStone(string stoneId);
     float BestDistanceForClimate(string climateId);
