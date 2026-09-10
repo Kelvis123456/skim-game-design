@@ -1,4 +1,5 @@
 using System.IO;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.SceneManagement;
@@ -40,6 +41,168 @@ public static class SKIMSetup
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("[SKIM] BonusZoneSystemImpl ensured on Systems in Boot.unity");
+    }
+
+    // ─────────────────────────── SPLASH SCENE ──────────────────────────
+
+    [MenuItem("SKIM/Create Splash Scene")]
+    public static void CreateSplashScene()
+    {
+        const string path = "Assets/_Project/Scenes/Splash.unity";
+        if (!File.Exists(path))
+        {
+            var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+
+            var camGO = new GameObject("Main Camera");
+            camGO.tag = "MainCamera";
+            var cam = camGO.AddComponent<Camera>();
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = new Color(0.039f, 0.086f, 0.157f);
+            camGO.AddComponent<AudioListener>();
+
+            Directory.CreateDirectory("Assets/_Project/Art/Generated");
+            var circle = CreateCircleSprite("Assets/_Project/Art/Generated/splash_circle.png", 256);
+            var ring = CreateRingSprite("Assets/_Project/Art/Generated/splash_ring.png", 256, 0.62f, 0.9f);
+
+            var canvasGO = new GameObject("SplashCanvas");
+            var canvas = canvasGO.AddComponent<Canvas>();
+            canvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            var scaler = canvasGO.AddComponent<UnityEngine.UI.CanvasScaler>();
+            scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+            scaler.referenceResolution = new Vector2(1080f, 1920f);
+            scaler.matchWidthOrHeight = 0.5f;
+            canvasGO.AddComponent<UnityEngine.UI.GraphicRaycaster>();
+            var canvasGroup = canvasGO.AddComponent<CanvasGroup>();
+
+            var bgGO = new GameObject("Background", typeof(RectTransform));
+            bgGO.transform.SetParent(canvasGO.transform, false);
+            var bgRect = bgGO.GetComponent<RectTransform>();
+            bgRect.anchorMin = Vector2.zero; bgRect.anchorMax = Vector2.one;
+            bgRect.offsetMin = Vector2.zero; bgRect.offsetMax = Vector2.zero;
+            bgGO.AddComponent<UnityEngine.UI.Image>().color = new Color(0.039f, 0.086f, 0.157f);
+
+            var ringGO = new GameObject("Ring", typeof(RectTransform));
+            ringGO.transform.SetParent(canvasGO.transform, false);
+            var ringRect = ringGO.GetComponent<RectTransform>();
+            ringRect.anchorMin = ringRect.anchorMax = new Vector2(0.5f, 0.5f);
+            ringRect.pivot = new Vector2(0.5f, 0.5f);
+            ringRect.anchoredPosition = new Vector2(0f, -80f);
+            ringRect.sizeDelta = new Vector2(360f, 360f);
+            var ringImg = ringGO.AddComponent<UnityEngine.UI.Image>();
+            ringImg.sprite = ring;
+            ringImg.color = new Color(0f, 0.77f, 0.8f, 0.85f);
+
+            var stoneGO = new GameObject("Stone", typeof(RectTransform));
+            stoneGO.transform.SetParent(canvasGO.transform, false);
+            var stoneRect = stoneGO.GetComponent<RectTransform>();
+            stoneRect.anchorMin = stoneRect.anchorMax = new Vector2(0.5f, 0.5f);
+            stoneRect.pivot = new Vector2(0.5f, 0.5f);
+            stoneRect.anchoredPosition = new Vector2(0f, -80f);
+            stoneRect.sizeDelta = new Vector2(90f, 60f);
+            var stoneImg = stoneGO.AddComponent<UnityEngine.UI.Image>();
+            stoneImg.sprite = circle;
+            stoneImg.color = new Color(0.722f, 0.773f, 0.816f);
+
+            var titleTmp = new GameObject("Title", typeof(RectTransform)).AddComponent<TMPro.TextMeshProUGUI>();
+            titleTmp.transform.SetParent(canvasGO.transform, false);
+            titleTmp.text = "SKIM";
+            titleTmp.fontSize = 140f;
+            titleTmp.alignment = TMPro.TextAlignmentOptions.Center;
+            titleTmp.color = Color.white;
+            titleTmp.rectTransform.anchorMin = titleTmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            titleTmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            titleTmp.rectTransform.anchoredPosition = new Vector2(0f, 260f);
+            titleTmp.rectTransform.sizeDelta = new Vector2(900f, 200f);
+
+            var subTmp = new GameObject("Subtitle", typeof(RectTransform)).AddComponent<TMPro.TextMeshProUGUI>();
+            subTmp.transform.SetParent(canvasGO.transform, false);
+            subTmp.text = "Una piedra. Un flick. El océano entero.";
+            subTmp.fontSize = 32f;
+            subTmp.alignment = TMPro.TextAlignmentOptions.Center;
+            subTmp.color = new Color(0.553f, 0.706f, 0.831f);
+            subTmp.rectTransform.anchorMin = subTmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+            subTmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
+            subTmp.rectTransform.anchoredPosition = new Vector2(0f, 140f);
+            subTmp.rectTransform.sizeDelta = new Vector2(900f, 60f);
+
+            var controller = canvasGO.AddComponent<SplashController>();
+            SetPrivateField(controller, "_canvasGroup", canvasGroup);
+            SetPrivateField(controller, "_stone", stoneRect);
+            SetPrivateField(controller, "_ring", ringRect);
+            SetPrivateField(controller, "_ringImage", ringImg);
+
+            EditorSceneManager.SaveScene(scene, path);
+            Debug.Log("[SKIM] Splash.unity created");
+        }
+
+        var scenes = EditorBuildSettings.scenes;
+        if (!System.Array.Exists(scenes, s => s.path == path))
+        {
+            var list = new List<EditorBuildSettingsScene>(scenes);
+            list.Insert(0, new EditorBuildSettingsScene(path, true));
+            EditorBuildSettings.scenes = list.ToArray();
+        }
+        Debug.Log("[SKIM] Splash scene ensured as build index 0");
+    }
+
+    static Sprite CreateCircleSprite(string path, int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var pixels = new Color32[size * size];
+        float r = size / 2f;
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            float dx = x - r + 0.5f, dy = y - r + 0.5f;
+            float d = Mathf.Sqrt(dx * dx + dy * dy);
+            float a = Mathf.Clamp01(r - d + 0.5f);
+            pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
+        }
+        tex.SetPixels32(pixels);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.alphaIsTransparency = true;
+        importer.mipmapEnabled = false;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+    }
+
+    static Sprite CreateRingSprite(string path, int size, float innerRatio, float outerRatio)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false);
+        var pixels = new Color32[size * size];
+        float r = size / 2f;
+        float innerR = r * innerRatio;
+        float outerR = r * outerRatio;
+        for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+        {
+            float dx = x - r + 0.5f, dy = y - r + 0.5f;
+            float d = Mathf.Sqrt(dx * dx + dy * dy);
+            float aOuter = Mathf.Clamp01(outerR - d + 1.5f);
+            float aInner = Mathf.Clamp01(d - innerR + 1.5f);
+            float a = Mathf.Min(aOuter, aInner);
+            pixels[y * size + x] = new Color32(255, 255, 255, (byte)(a * 255));
+        }
+        tex.SetPixels32(pixels);
+        tex.Apply();
+        File.WriteAllBytes(path, tex.EncodeToPNG());
+        Object.DestroyImmediate(tex);
+
+        AssetDatabase.ImportAsset(path, ImportAssetOptions.ForceUpdate);
+        var importer = (TextureImporter)AssetImporter.GetAtPath(path);
+        importer.textureType = TextureImporterType.Sprite;
+        importer.spriteImportMode = SpriteImportMode.Single;
+        importer.alphaIsTransparency = true;
+        importer.mipmapEnabled = false;
+        importer.SaveAndReimport();
+        return AssetDatabase.LoadAssetAtPath<Sprite>(path);
     }
 
     static void Run()
@@ -264,13 +427,14 @@ public static class SKIMSetup
 
     static void AddScenesToBuildSettings()
     {
-        var scenes = new[]
-        {
-            new EditorBuildSettingsScene("Assets/_Project/Scenes/Boot.unity", true),
-            new EditorBuildSettingsScene("Assets/_Project/Scenes/Game.unity", true),
-        };
-        EditorBuildSettings.scenes = scenes;
-        Debug.Log("[SKIM] Build Settings updated: Boot(0) Game(1)");
+        const string splashPath = "Assets/_Project/Scenes/Splash.unity";
+        var list = new List<EditorBuildSettingsScene>();
+        if (File.Exists(splashPath)) list.Add(new EditorBuildSettingsScene(splashPath, true));
+        list.Add(new EditorBuildSettingsScene("Assets/_Project/Scenes/Boot.unity", true));
+        list.Add(new EditorBuildSettingsScene("Assets/_Project/Scenes/Game.unity", true));
+
+        EditorBuildSettings.scenes = list.ToArray();
+        Debug.Log("[SKIM] Build Settings updated: " + string.Join(", ", list.ConvertAll(s => s.path)));
     }
 
     // ─────────────────────────── PROJECT SETTINGS ─────────────────────

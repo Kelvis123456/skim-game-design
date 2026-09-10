@@ -107,6 +107,53 @@ public static class SceneScreenshotTool
         }
     }
 
+    const string SplashCap1Key = "SKIM_Screenshot_SplashCap1";
+    const string SplashCap2Key = "SKIM_Screenshot_SplashCap2";
+
+    [MenuItem("SKIM/Capture Splash Screen")]
+    public static void CaptureSplashScreen()
+    {
+        var outDir = Path.GetFullPath(Path.Combine(Application.dataPath, "../../screenshots"));
+        Directory.CreateDirectory(outDir);
+        EditorPrefs.SetString(OutDirKey, outDir);
+        EditorPrefs.SetBool(SplashCap1Key, false);
+        EditorPrefs.SetBool(SplashCap2Key, false);
+
+        EditorSettings.enterPlayModeOptionsEnabled = true;
+        EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload
+                                             | EnterPlayModeOptions.DisableSceneReload;
+
+        EditorSceneManager.OpenScene("Assets/_Project/Scenes/Splash.unity");
+        EditorApplication.update += OnSplashUpdate;
+        EditorApplication.EnterPlaymode();
+    }
+
+    // Uses Time.time, not a tick count — batch-mode editor ticks can be a fraction of a
+    // millisecond apart (see the gameplay capture above), so real elapsed seconds is the
+    // only reliable way to land these captures mid-animation.
+    static void OnSplashUpdate()
+    {
+        if (!EditorApplication.isPlaying) return;
+
+        if (!EditorPrefs.GetBool(SplashCap1Key) && Time.time >= 0.5f)
+        {
+            EditorPrefs.SetBool(SplashCap1Key, true);
+            Capture("splash_1_fadein.png");
+        }
+        else if (!EditorPrefs.GetBool(SplashCap2Key) && Time.time >= 1.0f)
+        {
+            EditorPrefs.SetBool(SplashCap2Key, true);
+            Capture("splash_2_hop.png");
+        }
+        else if (Time.time >= 1.6f)
+        {
+            Capture("splash_3_late.png");
+            EditorApplication.update -= OnSplashUpdate;
+            EditorApplication.ExitPlaymode();
+            EditorApplication.delayCall += () => EditorApplication.Exit(0);
+        }
+    }
+
     static void LogStoneState(int sinceLaunch)
     {
         if (!ServiceLocator.TryGet<IStoneSimulator>(out var sim)) return;
