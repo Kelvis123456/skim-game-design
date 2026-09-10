@@ -78,8 +78,8 @@ public class StoneSimulatorImpl : MonoBehaviour, IStoneSimulator
         var pos = _state.Position;
 
         vel.y -= GRAVITY * dt;
-        vel.x *= 1f - AIR_DRAG;
-        vel.z *= 1f - AIR_DRAG;
+        vel.x *= 1f - AIR_DRAG * dt;
+        vel.z *= 1f - AIR_DRAG * dt;
         pos += vel * dt;
 
         float t = _ocean?.SessionTime ?? 0f;
@@ -127,6 +127,9 @@ public class StoneSimulatorImpl : MonoBehaviour, IStoneSimulator
                                 StoneState.StonePhase.InFlight, dist, pos.y - waterY);
     }
 
+    // Score/multiplier/record fields are always zero here — the physics layer has no
+    // scoring data. The real result comes from ScoringSystemImpl.FinalizeLaunch(),
+    // which is what GameBootstrapper actually uses; this one only carries distance/skips.
     LaunchResult BuildResult() =>
         new LaunchResult(_state.TotalDistance, _state.SkipCount, 0, 0f, false, false);
 
@@ -201,7 +204,7 @@ class StoneSimulatorGhost
     {
         if (_sunk) return;
         _vel.y -= GRAVITY * dt;
-        _vel.x *= 1f - AIR_DRAG;
+        _vel.x *= 1f - AIR_DRAG * dt;
         _pos += _vel * dt;
 
         float waterY = _ocean.GetHeightAt(_pos.x, time);
