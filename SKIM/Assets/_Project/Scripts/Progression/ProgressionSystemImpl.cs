@@ -80,6 +80,9 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
 
         if (_selectedStone != null) UpdateRecord(_data.StoneRecords, _selectedStone.StoneName, result.Distance);
         if (_selectedClimate != null) UpdateRecord(_data.ClimateRecords, _selectedClimate.ClimateName, result.Distance);
+        if (result.SkipCount > _data.AllTimeBestSkipCount) _data.AllTimeBestSkipCount = result.SkipCount;
+
+        EvaluateAchievements();
     }
 
     static void UpdateRecord(List<SaveData.StatRecord> records, string id, float distance)
@@ -143,8 +146,50 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
         if (p.Progress >= def.target)
         {
             p.Completed = true;
+            _data.TotalDailyChallengesCompleted++;
             if (ServiceLocator.TryGet<IEconomySystem>(out var economy))
                 economy.EarnConchas(def.reward, "daily_challenge");
+        }
+    }
+
+    // ─────────────────────────── ACHIEVEMENTS ───────────────────────────
+
+    public event System.Action<AchievementDefinition> OnAchievementUnlocked;
+
+    public bool IsAchievementUnlocked(string achievementId) =>
+        _data.UnlockedAchievementIds.Contains(achievementId);
+
+    void EvaluateAchievements()
+    {
+        foreach (var def in AchievementCatalog.All)
+        {
+            if (_data.UnlockedAchievementIds.Contains(def.Id)) continue;
+
+            float value = def.Metric switch
+            {
+                AchievementMetric.TotalDistance             => _data.TotalAccumulatedDistance,
+                AchievementMetric.BestDistance               => _data.AllTimeRecord,
+                AchievementMetric.BestSkipCount               => _data.AllTimeBestSkipCount,
+                AchievementMetric.DailyChallengesCompleted   => _data.TotalDailyChallengesCompleted,
+                AchievementMetric.StonesUnlocked             => _allStones.Count(IsStoneUnlocked),
+                AchievementMetric.ClimatesUnlocked           => _allClimates.Count(IsClimateUnlocked),
+                _ => 0f
+            };
+
+            // Unlock counts compare against how many exist right now rather than the
+            // catalog's static Target, so adding a stone/climate later doesn't strand it.
+            float target = def.Metric switch
+            {
+                AchievementMetric.StonesUnlocked   => _allStones.Length,
+                AchievementMetric.ClimatesUnlocked => _allClimates.Length,
+                _ => def.Target
+            };
+
+            if (value >= target)
+            {
+                _data.UnlockedAchievementIds.Add(def.Id);
+                OnAchievementUnlocked?.Invoke(def);
+            }
         }
     }
 

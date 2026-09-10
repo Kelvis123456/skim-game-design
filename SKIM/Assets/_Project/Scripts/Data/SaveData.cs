@@ -15,6 +15,9 @@ public class SaveData
     public long LastSaveTimestamp;
     public bool VibrationEnabled = true;
     public bool ReduceEffects;
+    public int AllTimeBestSkipCount;
+    public int TotalDailyChallengesCompleted;
+    public List<string> UnlockedAchievementIds = new();
 
     // A list, not a Dictionary — JsonUtility silently serializes Dictionary
     // fields as empty (see EquippedSkins above, which already hits this).

@@ -17,6 +17,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] GameObject _climateSelectorPanel;
     [SerializeField] GameObject _settingsPanel;
     [SerializeField] GameObject _dailyChallengePanel;
+    [SerializeField] GameObject _achievementsPanel;
 
     [Header("Buttons")]
     [SerializeField] Button _launchButton;
@@ -24,6 +25,7 @@ public class MainMenuController : MonoBehaviour
     [SerializeField] Button _tabClimates;
     [SerializeField] Button _tabSettings;
     [SerializeField] Button _tabDailyChallenge;
+    [SerializeField] Button _tabAchievements;
 
     IProgressionSystem _prog;
     IOceanSystem _ocean;
@@ -45,6 +47,7 @@ public class MainMenuController : MonoBehaviour
         _tabClimates?.onClick.AddListener(() => ShowPanel(_climateSelectorPanel));
         _tabSettings?.onClick.AddListener(() => ShowPanel(_settingsPanel));
         _tabDailyChallenge?.onClick.AddListener(() => ShowPanel(_dailyChallengePanel));
+        _tabAchievements?.onClick.AddListener(() => ShowPanel(_achievementsPanel));
 
         ShowPanel(_mainPanel);
     }
@@ -62,7 +65,7 @@ public class MainMenuController : MonoBehaviour
     void ShowPanel(GameObject target)
     {
         foreach (var p in new[] { _mainPanel, _stoneSelectorPanel, _climateSelectorPanel,
-                                   _settingsPanel, _dailyChallengePanel })
+                                   _settingsPanel, _dailyChallengePanel, _achievementsPanel })
             if (p != null) p.SetActive(p == target);
     }
 

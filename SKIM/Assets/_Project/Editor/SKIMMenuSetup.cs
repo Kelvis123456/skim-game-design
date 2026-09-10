@@ -51,11 +51,13 @@ public static class SKIMMenuSetup
         templates.transform.SetParent(canvasGO.transform, false);
 
         var mainPanel     = BuildMainPanel(canvasGO.transform, out var climateLabel, out var recordLabel, out var launchBtn,
-                                           out var tabStones, out var tabClimates, out var tabChallenge, out var tabSettings);
+                                           out var tabStones, out var tabClimates, out var tabChallenge, out var tabSettings,
+                                           out var tabAchievements);
         var stonePanel    = BuildStonePanel(canvasGO.transform, templates.transform);
         var climatePanel  = BuildClimatePanel(canvasGO.transform, templates.transform);
         var settingsPanel = BuildSettingsPanel(canvasGO.transform);
         var challengePanel = BuildChallengePanel(canvasGO.transform);
+        var achievementsPanel = BuildAchievementsPanel(canvasGO.transform, templates.transform);
 
         templates.SetActive(false);
 
@@ -67,11 +69,13 @@ public static class SKIMMenuSetup
         Wire(menu, "_climateSelectorPanel", climatePanel);
         Wire(menu, "_settingsPanel", settingsPanel);
         Wire(menu, "_dailyChallengePanel", challengePanel);
+        Wire(menu, "_achievementsPanel", achievementsPanel);
         Wire(menu, "_launchButton", launchBtn);
         Wire(menu, "_tabStones", tabStones);
         Wire(menu, "_tabClimates", tabClimates);
         Wire(menu, "_tabSettings", tabSettings);
         Wire(menu, "_tabDailyChallenge", tabChallenge);
+        Wire(menu, "_tabAchievements", tabAchievements);
 
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
@@ -82,7 +86,7 @@ public static class SKIMMenuSetup
 
     static GameObject BuildMainPanel(Transform parent, out TMP_Text climateLabel, out TMP_Text recordLabel,
                                      out Button launch, out Button tabStones, out Button tabClimates,
-                                     out Button tabChallenge, out Button tabSettings)
+                                     out Button tabChallenge, out Button tabSettings, out Button tabAchievements)
     {
         var panel = Panel(parent, "MainPanel");
 
@@ -125,12 +129,14 @@ public static class SKIMMenuSetup
         tabsRect.anchorMax = new Vector2(0.5f, 1f);
         tabsRect.pivot = new Vector2(0.5f, 1f);
         tabsRect.anchoredPosition = new Vector2(0f, -1400f);
-        tabsRect.sizeDelta = new Vector2(1000f, 120f);
+        tabsRect.sizeDelta = new Vector2(1080f, 120f);
 
-        tabStones    = TabButton(tabs.transform, "TabStones", "Colección", -375f);
-        tabClimates  = TabButton(tabs.transform, "TabClimates", "Clima", -125f);
-        tabChallenge = TabButton(tabs.transform, "TabChallenge", "Desafíos", 125f);
-        tabSettings  = TabButton(tabs.transform, "TabSettings", "Config", 375f);
+        const float tabW = 190f;
+        tabStones       = TabButton(tabs.transform, "TabStones", "Colección", -432f, tabW);
+        tabClimates     = TabButton(tabs.transform, "TabClimates", "Clima", -216f, tabW);
+        tabChallenge    = TabButton(tabs.transform, "TabChallenge", "Desafíos", 0f, tabW);
+        tabAchievements = TabButton(tabs.transform, "TabAchievements", "Logros", 216f, tabW);
+        tabSettings     = TabButton(tabs.transform, "TabSettings", "Config", 432f, tabW);
 
         return panel;
     }
@@ -224,6 +230,24 @@ public static class SKIMMenuSetup
         Wire(challengeUI, "_rewardLabel", reward);
         Wire(challengeUI, "_progressFill", fill);
         Wire(challengeUI, "_resetLabel", reset);
+
+        BackButton(panel.transform);
+        return panel;
+    }
+
+    static GameObject BuildAchievementsPanel(Transform parent, Transform templates)
+    {
+        var panel = Panel(parent, "AchievementsPanel");
+        Title(panel.transform, "LOGROS", 64f, new Vector2(0f, -160f));
+        Label(panel.transform, "Se desbloquean solos mientras juegas", 28f, MUTED,
+              new Vector2(0f, -250f), new Vector2(900f, 40f));
+
+        var container = Container(panel.transform, new Vector2(0f, -330f), new Vector2(920f, 1200f), 24f);
+        var template = RowTemplate(templates, "AchievementRow", withBadge: true);
+
+        var screen = panel.AddComponent<AchievementsScreen>();
+        Wire(screen, "_rowContainer", container.transform);
+        Wire(screen, "_rowPrefab", template);
 
         BackButton(panel.transform);
         return panel;
@@ -346,7 +370,7 @@ public static class SKIMMenuSetup
         return btn;
     }
 
-    static Button TabButton(Transform parent, string name, string text, float x)
+    static Button TabButton(Transform parent, string name, string text, float x, float width = 230f)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -354,7 +378,7 @@ public static class SKIMMenuSetup
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
         rect.pivot = new Vector2(0.5f, 0.5f);
         rect.anchoredPosition = new Vector2(x, 0f);
-        rect.sizeDelta = new Vector2(230f, 100f);
+        rect.sizeDelta = new Vector2(width, 100f);
 
         var img = go.AddComponent<Image>();
         img.sprite = _card16;
@@ -364,7 +388,7 @@ public static class SKIMMenuSetup
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
 
-        var tmp = Label(go.transform, text, 28f, MUTED, Vector2.zero, new Vector2(220f, 90f));
+        var tmp = Label(go.transform, text, 26f, MUTED, Vector2.zero, new Vector2(width - 10f, 90f));
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.anchoredPosition = Vector2.zero;

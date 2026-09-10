@@ -18,6 +18,8 @@ public interface IProgressionSystem
     DailyChallengeInfo CurrentDailyChallenge { get; }
     float BestDistanceForStone(string stoneId);
     float BestDistanceForClimate(string climateId);
+    bool IsAchievementUnlocked(string achievementId);
+    event System.Action<AchievementDefinition> OnAchievementUnlocked;
     void Save();
     void Load();
     void ResetData();
