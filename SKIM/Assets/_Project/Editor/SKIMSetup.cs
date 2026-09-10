@@ -22,6 +22,26 @@ public static class SKIMSetup
         Run();
     }
 
+    // Boot.unity is committed (not regenerated per machine), so a system added after that
+    // commit needs to be patched into the existing "Systems" GameObject instead of relying
+    // on CreateBootScene, which no-ops once the scene file exists.
+    [MenuItem("SKIM/Add Bonus Zone System")]
+    public static void AddBonusZoneSystem()
+    {
+        const string path = "Assets/_Project/Scenes/Boot.unity";
+        var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+        var systemsGO = GameObject.Find("Systems");
+        if (systemsGO == null) { Debug.LogError("[SKIM] Systems GameObject not found in Boot.unity."); return; }
+
+        if (systemsGO.GetComponent<BonusZoneSystemImpl>() == null)
+            systemsGO.AddComponent<BonusZoneSystemImpl>();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[SKIM] BonusZoneSystemImpl ensured on Systems in Boot.unity");
+    }
+
     static void Run()
     {
         if (EditorPrefs.GetBool(DONE_KEY, false)) return;

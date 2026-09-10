@@ -100,13 +100,19 @@ public static class SKIMMenuSetup
         CardTextLeft(statsCard.transform, "TU MEJOR TIRADA", 26f, MUTED, 48f, 400f);
         recordLabel = CardTextLeft(statsCard.transform, "RÉCORD: 0.0m", 46f, WHITE, -22f, 600f);
 
-        // Daily challenge card with progress bar
+        // Daily challenge card — labels are populated live by DailyChallengeCardUI
         var challengeCard = Card(panel.transform, "ChallengeCard", new Vector2(0f, -960f), new Vector2(900f, 250f), _card20);
         CardTextLeft(challengeCard.transform, "DESAFÍO DIARIO", 26f, MUTED, 82f, 400f);
-        CardTextLeft(challengeCard.transform, "Recorre 100m en una sola tirada", 32f, WHITE, 28f, 700f);
-        ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 16f), 0.47f);
-        CardTextLeft(challengeCard.transform, "47m / 100m", 26f, MUTED, -78f, 300f);
-        CardTextRight(challengeCard.transform, "+120 conchas", 26f, GOLD, -78f, 300f);
+        var challengeDesc = CardTextLeft(challengeCard.transform, "", 32f, WHITE, 28f, 700f);
+        var challengeFill = ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 16f), 0f);
+        var challengeProgress = CardTextLeft(challengeCard.transform, "", 26f, MUTED, -78f, 300f);
+        var challengeReward = CardTextRight(challengeCard.transform, "", 26f, GOLD, -78f, 300f);
+
+        var mainChallengeUI = challengeCard.AddComponent<DailyChallengeCardUI>();
+        Wire(mainChallengeUI, "_descriptionLabel", challengeDesc);
+        Wire(mainChallengeUI, "_progressLabel", challengeProgress);
+        Wire(mainChallengeUI, "_rewardLabel", challengeReward);
+        Wire(mainChallengeUI, "_progressFill", challengeFill);
 
         // Primary CTA — teal pill, 70px tall at 1x (140 at this 2x reference)
         launch = PillButton(panel.transform, "LaunchButton", "LANZAR", new Vector2(0f, -1200f), new Vector2(760f, 140f));
@@ -204,12 +210,18 @@ public static class SKIMMenuSetup
         Title(panel.transform, "DESAFÍO DIARIO", 58f, new Vector2(0f, -160f));
 
         var card = Card(panel.transform, "ChallengeMain", new Vector2(0f, -340f), new Vector2(900f, 340f), _card24);
-        CardTextLeft(card.transform, "DISTANCIA", 26f, TEAL, 118f, 400f);
-        CardTextLeft(card.transform, "Recorre 100m en una sola tirada", 34f, WHITE, 62f, 700f);
-        ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 16f), 0.47f);
-        CardTextLeft(card.transform, "47m / 100m  ·  47%", 28f, MUTED, -52f, 420f);
-        CardTextRight(card.transform, "+120 conchas", 30f, GOLD, -52f, 320f);
-        CardTextLeft(card.transform, "Renueva en 6h 12m", 26f, MUTED, -118f, 500f);
+        var desc = CardTextLeft(card.transform, "", 34f, WHITE, 62f, 700f);
+        var fill = ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 16f), 0f);
+        var progress = CardTextLeft(card.transform, "", 28f, MUTED, -52f, 420f);
+        var reward = CardTextRight(card.transform, "", 30f, GOLD, -52f, 320f);
+        var reset = CardTextLeft(card.transform, "", 26f, MUTED, -118f, 500f);
+
+        var challengeUI = card.AddComponent<DailyChallengeCardUI>();
+        Wire(challengeUI, "_descriptionLabel", desc);
+        Wire(challengeUI, "_progressLabel", progress);
+        Wire(challengeUI, "_rewardLabel", reward);
+        Wire(challengeUI, "_progressFill", fill);
+        Wire(challengeUI, "_resetLabel", reset);
 
         BackButton(panel.transform);
         return panel;
@@ -460,7 +472,7 @@ public static class SKIMMenuSetup
         return go;
     }
 
-    static void ProgressBar(Transform parent, Vector2 pos, Vector2 size, float fill)
+    static RectTransform ProgressBar(Transform parent, Vector2 pos, Vector2 size, float fill)
     {
         var track = new GameObject("ProgressTrack", typeof(RectTransform));
         track.transform.SetParent(parent, false);
@@ -487,6 +499,8 @@ public static class SKIMMenuSetup
         fimg.sprite = _pill35;
         fimg.type = Image.Type.Sliced;
         fimg.color = TEAL;
+
+        return frect;
     }
 
     static Slider SliderRow(Transform parent, string label, Vector2 pos, float value)

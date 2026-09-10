@@ -139,6 +139,7 @@ GameObject:
   - component: {fileID: 884763310}
   - component: {fileID: 884763309}
   - component: {fileID: 884763308}
+  - component: {fileID: 884763320}
   m_Layer: 0
   m_Name: Systems
   m_TagString: Untagged
@@ -333,6 +334,18 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &884763320
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 884763307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d41ab810be6fbf04799065fd16925025, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BonusZoneSystemImpl
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

@@ -6,6 +6,7 @@ public interface IScoringSystem
     float CurrentMultiplier { get; }
     float SessionBestDistance { get; }
     void RegisterImpact(StoneState impactState, ClimateData climate);
+    void RegisterBonusZoneHit(BonusZoneCategory category);
     LaunchResult FinalizeLaunch(StoneState finalState, ClimateData climate);
     void ResetForNewLaunch();
     event Action<float> OnMultiplierChanged;

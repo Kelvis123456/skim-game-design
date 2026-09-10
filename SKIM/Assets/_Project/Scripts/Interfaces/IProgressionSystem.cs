@@ -13,6 +13,9 @@ public interface IProgressionSystem
     IReadOnlyList<ClimateData> AvailableClimates { get; }
     StoneData SelectedStone { get; set; }
     ClimateData SelectedClimate { get; set; }
+    bool VibrationEnabled { get; set; }
+    DailyChallengeInfo CurrentDailyChallenge { get; }
     void Save();
     void Load();
+    void ResetData();
 }

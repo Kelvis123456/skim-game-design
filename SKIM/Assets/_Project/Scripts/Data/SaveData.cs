@@ -13,6 +13,7 @@ public class SaveData
     public int TotalSessionCount;
     public DailyChallengeProgress LastDailyChallenge;
     public long LastSaveTimestamp;
+    public bool VibrationEnabled = true;
 
     [System.Serializable]
     public class DailyChallengeProgress

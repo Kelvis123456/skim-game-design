@@ -13,8 +13,15 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
 
     int _launchScore;
     int _bonusZones;
+    int _bonusPoints;
     float _maxMultiplier;
     float _sessionAllTimeRecord;
+
+    public void RegisterBonusZoneHit(BonusZoneCategory category)
+    {
+        _bonusZones++;
+        _bonusPoints += (int)category;
+    }
 
     public void RegisterImpact(StoneState state, ClimateData climate)
     {
@@ -32,7 +39,7 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
     {
         float climateBonus = climate != null ? climate.ClimateMultiplier - 1f : 0f;
         int score = Mathf.RoundToInt(final.TotalDistance * 10f * CurrentMultiplier
-                                     + _bonusZones * 500
+                                     + _bonusPoints
                                      + final.TotalDistance * 10f * CurrentMultiplier * climateBonus);
 
         SessionScore += score;
@@ -57,6 +64,7 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
     {
         _launchScore = 0;
         _bonusZones = 0;
+        _bonusPoints = 0;
         _maxMultiplier = 1f;
         CurrentMultiplier = 1f;
     }

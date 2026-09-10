@@ -45,3 +45,6 @@ crashlytics-build.properties
 
 # Visual Studio cache
 .vs/
+
+# Headless QA screenshots (SceneScreenshotTool output)
+/screenshots/
