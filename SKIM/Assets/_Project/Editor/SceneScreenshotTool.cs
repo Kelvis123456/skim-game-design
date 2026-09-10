@@ -44,12 +44,43 @@ public static class SceneScreenshotTool
         {
             Capture("boot_flow.png");
         }
-        else if (frame == CaptureAtFrame + 5)
+        else if (frame == CaptureAtFrame + 10)
+        {
+            ClickTab("TabSettings");
+        }
+        else if (frame == CaptureAtFrame + 15)
+        {
+            Capture("settings_panel.png");
+        }
+        else if (frame == CaptureAtFrame + 20)
+        {
+            // The tab bar lives inside MainPanel, which hides when a sub-panel is
+            // shown — has to go back to the hub before another tab is clickable.
+            ClickTab("BackButton");
+        }
+        else if (frame == CaptureAtFrame + 25)
+        {
+            ClickTab("TabAchievements");
+        }
+        else if (frame == CaptureAtFrame + 30)
+        {
+            Capture("achievements_panel.png");
+        }
+        else if (frame == CaptureAtFrame + 35)
         {
             EditorApplication.update -= OnUpdate;
             EditorApplication.ExitPlaymode();
             EditorApplication.delayCall += () => EditorApplication.Exit(0);
         }
+    }
+
+    // Drives the real MainMenuController.onClick listener instead of simulating a
+    // pointer — same effect, no input-system plumbing needed for a QA capture.
+    static void ClickTab(string tabName)
+    {
+        var tab = GameObject.Find(tabName)?.GetComponent<UnityEngine.UI.Button>();
+        if (tab == null) { Debug.LogError($"[SceneScreenshotTool] Tab '{tabName}' not found."); return; }
+        tab.onClick.Invoke();
     }
 
     static void Capture(string fileName)

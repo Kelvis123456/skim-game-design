@@ -71,6 +71,12 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
         set => _data.ReduceEffects = value;
     }
 
+    public bool PermanentAssist
+    {
+        get => _data.PermanentAssist;
+        set => _data.PermanentAssist = value;
+    }
+
     public void RegisterLaunch(LaunchResult result)
     {
         _data.TotalAccumulatedDistance += result.Distance;

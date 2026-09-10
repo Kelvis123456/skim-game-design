@@ -8,6 +8,7 @@ public class SettingsScreen : MonoBehaviour
     [SerializeField] Slider _sfxSlider;
     [SerializeField] Toggle _vibrationToggle;
     [SerializeField] Toggle _reduceEffectsToggle;
+    [SerializeField] Toggle _permanentAssistToggle;
     [SerializeField] Button _deleteDataButton;
     [SerializeField] GameObject _deleteConfirmDialog;
 
@@ -38,6 +39,11 @@ public class SettingsScreen : MonoBehaviour
             _reduceEffectsToggle.isOn = _progression.ReduceEffects;
             _reduceEffectsToggle.onValueChanged.AddListener(v => _progression.ReduceEffects = v);
         }
+        if (_permanentAssistToggle)
+        {
+            _permanentAssistToggle.isOn = _progression.PermanentAssist;
+            _permanentAssistToggle.onValueChanged.AddListener(v => _progression.PermanentAssist = v);
+        }
         _deleteDataButton?.onClick.AddListener(() => _deleteConfirmDialog?.SetActive(true));
     }
 
@@ -47,6 +53,7 @@ public class SettingsScreen : MonoBehaviour
         _sfxSlider?.onValueChanged.RemoveAllListeners();
         _vibrationToggle?.onValueChanged.RemoveAllListeners();
         _reduceEffectsToggle?.onValueChanged.RemoveAllListeners();
+        _permanentAssistToggle?.onValueChanged.RemoveAllListeners();
         _deleteDataButton?.onClick.RemoveAllListeners();
     }
 

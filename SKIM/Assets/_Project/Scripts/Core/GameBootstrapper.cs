@@ -110,7 +110,7 @@ public class GameBootstrapper : MonoBehaviour
         {
             var selectedStone = progression.SelectedStone;
             if (selectedStone == null) return;
-            bool assisted = progression.TotalSessionCount <= 3;
+            bool assisted = progression.TotalSessionCount <= 3 || progression.PermanentAssist;
             stone.Launch(flickInput, selectedStone, assisted);
             scoring.ResetForNewLaunch();
             bonusZones.GenerateForLaunch();

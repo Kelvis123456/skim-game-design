@@ -15,6 +15,7 @@ public class SaveData
     public long LastSaveTimestamp;
     public bool VibrationEnabled = true;
     public bool ReduceEffects;
+    public bool PermanentAssist;
     public int AllTimeBestSkipCount;
     public int TotalDailyChallengesCompleted;
     public List<string> UnlockedAchievementIds = new();
