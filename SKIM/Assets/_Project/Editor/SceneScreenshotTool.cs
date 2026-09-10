@@ -14,6 +14,8 @@ public static class SceneScreenshotTool
 {
     const string FrameKey = "SKIM_Screenshot_Frame";
     const string OutDirKey = "SKIM_Screenshot_OutDir";
+    const string LaunchFrameKey = "SKIM_Screenshot_LaunchFrame";
+    const string SunkFrameKey = "SKIM_Screenshot_SunkFrame";
     const int CaptureAtFrame = 180; // ~3s at 60fps — enough for additive load + init
 
     [MenuItem("SKIM/Capture Boot Flow Screenshot")]
@@ -23,6 +25,7 @@ public static class SceneScreenshotTool
         Directory.CreateDirectory(outDir);
         EditorPrefs.SetString(OutDirKey, outDir);
         EditorPrefs.SetInt(FrameKey, 0);
+        EditorPrefs.SetInt(SunkFrameKey, -1);
 
         EditorSettings.enterPlayModeOptionsEnabled = true;
         EditorSettings.enterPlayModeOptions = EnterPlayModeOptions.DisableDomainReload
@@ -68,10 +71,48 @@ public static class SceneScreenshotTool
         }
         else if (frame == CaptureAtFrame + 35)
         {
-            EditorApplication.update -= OnUpdate;
-            EditorApplication.ExitPlaymode();
-            EditorApplication.delayCall += () => EditorApplication.Exit(0);
+            ClickTab("BackButton");
         }
+        else if (frame == CaptureAtFrame + 40)
+        {
+            ClickTab("LaunchButton"); // hides the menu, shows the HUD (0.2s pop-out anim)
+        }
+        else if (frame == CaptureAtFrame + 100)
+        {
+            SimulateLaunch(); // bypasses gesture detection, drives the same Launch() a real flick would
+            EditorPrefs.SetInt(LaunchFrameKey, frame);
+        }
+        else if (frame > CaptureAtFrame + 100)
+        {
+            int sinceLaunch = frame - EditorPrefs.GetInt(LaunchFrameKey, frame);
+
+            if (sinceLaunch % 200 == 0) LogStoneState(sinceLaunch);
+            if (sinceLaunch == 120) Capture("gameplay_1.png");
+            if (sinceLaunch == 500) Capture("gameplay_2.png");
+
+            bool sunk = ServiceLocator.TryGet<IStoneSimulator>(out var s)
+                     && s.CurrentState.Phase == StoneState.StonePhase.Sunk;
+            int sunkFrame = EditorPrefs.GetInt(SunkFrameKey, -1);
+            if (sunk && sunkFrame < 0) { sunkFrame = frame; EditorPrefs.SetInt(SunkFrameKey, sunkFrame); Capture("gameplay_sunk.png"); }
+
+            if ((sunkFrame >= 0 && frame - sunkFrame >= 40) || sinceLaunch >= 8000)
+            {
+                if (sunkFrame >= 0) Capture("post_launch.png");
+                else Debug.LogWarning("[SceneScreenshotTool] Stone never sunk within the wait window.");
+
+                EditorApplication.update -= OnUpdate;
+                EditorApplication.ExitPlaymode();
+                EditorApplication.delayCall += () => EditorApplication.Exit(0);
+            }
+        }
+    }
+
+    static void LogStoneState(int sinceLaunch)
+    {
+        if (!ServiceLocator.TryGet<IStoneSimulator>(out var sim)) return;
+        var st = sim.CurrentState;
+        Debug.Log($"[SceneScreenshotTool] t+{sinceLaunch} phase={st.Phase} pos={st.Position} " +
+                  $"skips={st.SkipCount} Time.time={Time.time:F2} deltaTime={Time.deltaTime:F4}");
     }
 
     // Drives the real MainMenuController.onClick listener instead of simulating a
@@ -81,6 +122,31 @@ public static class SceneScreenshotTool
         var tab = GameObject.Find(tabName)?.GetComponent<UnityEngine.UI.Button>();
         if (tab == null) { Debug.LogError($"[SceneScreenshotTool] Tab '{tabName}' not found."); return; }
         tab.onClick.Invoke();
+    }
+
+    // Drives StoneSimulatorImpl.Launch() directly — same physics/scoring/VFX/bonus-zone
+    // path a real flick gesture triggers (see GameBootstrapper.WireEvents), just skipping
+    // the touch-drag detection itself, which isn't worth simulating for a QA capture.
+    static void SimulateLaunch()
+    {
+        if (!ServiceLocator.TryGet<IStoneSimulator>(out var sim))
+        {
+            Debug.LogError("[SceneScreenshotTool] IStoneSimulator not registered.");
+            return;
+        }
+        ServiceLocator.TryGet<IScoringSystem>(out var scoring);
+        ServiceLocator.TryGet<IBonusZoneSystem>(out var zones);
+        ServiceLocator.TryGet<IProgressionSystem>(out var prog);
+
+        sim.OnImpact += state => Debug.Log(
+            $"[SceneScreenshotTool] Impact skip={state.SkipCount} pos={state.Position} speed={state.Velocity.magnitude:F2}");
+        sim.OnSunk += result => Debug.Log(
+            $"[SceneScreenshotTool] Sunk dist={result.Distance:F1}m skips={result.SkipCount} score={result.Score}");
+
+        scoring?.ResetForNewLaunch();
+        zones?.GenerateForLaunch();
+        sim.Launch(new FlickInput(50f, 0.85f, 0.3f), prog?.SelectedStone, false);
+        Debug.Log("[SceneScreenshotTool] Launch triggered.");
     }
 
     static void Capture(string fileName)
