@@ -8,11 +8,23 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
 {
     Transform _ringPool;
     LineRenderer _pbLine;
+    ParticleSystem _splashPS;
+    ParticleSystem _starPS;
     [SerializeField] TMP_Text _scorePopupPrefab;
     [SerializeField] int _maxRings = 200;
 
     readonly Queue<GameObject> _rings = new();
     readonly List<GameObject> _activeRings = new();
+
+    // Combo trail state — lazily attached to whichever stone Transform is passed in.
+    Transform _comboStone;
+    Light _comboLight;
+    TrailRenderer _comboTrail;
+    Coroutine _chordPulseRoutine;
+    Coroutine _recordPulseRoutine;
+
+    static readonly Color COMBO_GLOW_COLOR = new Color(0f, 0.77f, 0.8f);
+    static readonly Color GOLD = new Color(0.96f, 0.82f, 0.25f);
 
     static readonly Color[] NOTE_COLORS =
     {
@@ -64,7 +76,39 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
         _pbLine.endColor   = new Color(0.96f, 0.82f, 0.25f, 0.6f);
         _pbLine.enabled = false;
 
+        _splashPS = CreateParticleSystem("SplashPS", new Color(0.67f, 0.87f, 0.93f), 40, 1f);
+        _starPS = CreateParticleSystem("StarPS", GOLD, 16, 0.3f);
+
         PrewarmRingPool();
+    }
+
+    ParticleSystem CreateParticleSystem(string name, Color color, int maxParticles, float gravityModifier)
+    {
+        var go = new GameObject(name);
+        go.transform.SetParent(transform);
+        var ps = go.AddComponent<ParticleSystem>();
+        var main = ps.main;
+        main.loop = false;
+        main.playOnAwake = false;
+        main.startLifetime = 0.7f;
+        main.startSpeed = 2f;
+        main.startSize = 0.05f;
+        main.startColor = color;
+        main.gravityModifier = gravityModifier;
+        main.maxParticles = maxParticles;
+        main.simulationSpace = ParticleSystemSimulationSpace.World;
+
+        var emission = ps.emission;
+        emission.enabled = false; // emitted manually via Emit()
+
+        var shape = ps.shape;
+        shape.enabled = false; // we set velocity per-particle via EmitParams
+
+        var psRenderer = go.GetComponent<ParticleSystemRenderer>();
+        psRenderer.material = CreateRingMaterial(color);
+        psRenderer.renderMode = ParticleSystemRenderMode.Billboard;
+
+        return ps;
     }
 
     void PrewarmRingPool()
@@ -164,30 +208,15 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
     public void SpawnImpactSplash(Vector3 pos, float force)
     {
         int count = Mathf.RoundToInt(Mathf.Lerp(3f, 8f, Mathf.Clamp01(force / 12f)));
+        var emitParams = new ParticleSystem.EmitParams { position = pos };
         for (int i = 0; i < count; i++)
         {
             float angle = Random.Range(0f, 360f) * Mathf.Deg2Rad;
-            var vel = new Vector3(Mathf.Cos(angle) * Random.Range(1f, 3f),
-                                  Random.Range(2f, 5f),
-                                  Mathf.Sin(angle) * Random.Range(1f, 3f));
-            StartCoroutine(SplashDot(pos, vel));
-        }
-    }
-
-    IEnumerator SplashDot(Vector3 startPos, Vector3 vel)
-    {
-        // Draw as a debug point — no GameObject allocation
-        float lifetime = 0.7f;
-        float t = 0f;
-        var pos = startPos;
-        while (t < lifetime)
-        {
-            t += Time.deltaTime;
-            vel.y -= 9.8f * Time.deltaTime;
-            pos += vel * Time.deltaTime;
-            Debug.DrawLine(pos, pos + Vector3.up * 0.05f,
-                           new Color(0.7f, 0.9f, 1f, 1f - t / lifetime));
-            yield return null;
+            emitParams.velocity = new Vector3(Mathf.Cos(angle) * Random.Range(1f, 3f),
+                                              Random.Range(2f, 5f),
+                                              Mathf.Sin(angle) * Random.Range(1f, 3f));
+            emitParams.startSize = Random.Range(0.03f, 0.06f);
+            _splashPS.Emit(emitParams, 1);
         }
     }
 
@@ -215,10 +244,110 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
         Destroy(txt.gameObject);
     }
 
-    public void TriggerNewRecordEffect(float dist) { }
-    public void TriggerChordResolutionPulse() { }
-    public void UpdateComboTrail(Transform st, int level) { }
-    public void ClearComboTrail() { }
+    // Combo glow — Fase 6 §5: no glow below lvl2, then rising point-light intensity/radius + a trail.
+    public void UpdateComboTrail(Transform stoneTransform, int comboLevel)
+    {
+        if (stoneTransform == null) return;
+
+        if (_comboStone != stoneTransform)
+        {
+            ClearComboTrail();
+            _comboStone = stoneTransform;
+            var lightGO = new GameObject("ComboLight");
+            lightGO.transform.SetParent(stoneTransform, false);
+            _comboLight = lightGO.AddComponent<Light>();
+            _comboLight.type = LightType.Point;
+            _comboLight.color = COMBO_GLOW_COLOR;
+
+            _comboTrail = stoneTransform.gameObject.AddComponent<TrailRenderer>();
+            _comboTrail.material = CreateRingMaterial(COMBO_GLOW_COLOR);
+            _comboTrail.widthMultiplier = 0.03f;
+            _comboTrail.time = 0.35f;
+            _comboTrail.startColor = new Color(COMBO_GLOW_COLOR.r, COMBO_GLOW_COLOR.g, COMBO_GLOW_COLOR.b, 0.8f);
+            _comboTrail.endColor = new Color(COMBO_GLOW_COLOR.r, COMBO_GLOW_COLOR.g, COMBO_GLOW_COLOR.b, 0f);
+        }
+
+        bool glowing = comboLevel >= 2;
+        _comboLight.enabled = glowing;
+        _comboTrail.emitting = comboLevel >= 3;
+
+        _comboLight.intensity = comboLevel switch { 2 => 0.3f, 3 => 0.6f, >= 4 => 1.0f, _ => 0f };
+        _comboLight.range = comboLevel switch { 2 => 0.3f, 3 => 0.5f, >= 4 => 0.8f, _ => 0f };
+    }
+
+    public void ClearComboTrail()
+    {
+        if (_comboLight != null) { Destroy(_comboLight.gameObject); _comboLight = null; }
+        if (_comboTrail != null) { Destroy(_comboTrail); _comboTrail = null; }
+        _comboStone = null;
+    }
+
+    // Combo ≥5 (multiplier ≥2.8): every ring visible in the session pulses teal→white→teal.
+    public void TriggerChordResolutionPulse()
+    {
+        if (_chordPulseRoutine != null) StopCoroutine(_chordPulseRoutine);
+        _chordPulseRoutine = StartCoroutine(ChordPulseRoutine());
+    }
+
+    IEnumerator ChordPulseRoutine()
+    {
+        const float duration = 0.3f;
+        var rings = new List<GameObject>(_activeRings);
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            float e = Mathf.Sin(Mathf.Clamp01(t / duration) * Mathf.PI); // teal -> white -> teal
+            foreach (var ring in rings)
+            {
+                if (ring == null || !ring.activeSelf) continue;
+                var lr = ring.GetComponent<LineRenderer>();
+                var pulsed = Color.Lerp(lr.startColor, Color.white, e);
+                lr.startColor = pulsed;
+            }
+            yield return null;
+        }
+        _chordPulseRoutine = null;
+    }
+
+    // New session-best distance: the PB line pulses gold 3 times, then 8 gold stars burst upward.
+    public void TriggerNewRecordEffect(float dist)
+    {
+        if (_recordPulseRoutine != null) StopCoroutine(_recordPulseRoutine);
+        _recordPulseRoutine = StartCoroutine(RecordEffectRoutine(dist));
+    }
+
+    IEnumerator RecordEffectRoutine(float dist)
+    {
+        var spawnPos = new Vector3(dist, 0.1f, 0f);
+        var emitParams = new ParticleSystem.EmitParams { position = spawnPos };
+        for (int i = 0; i < 8; i++)
+        {
+            float angle = i / 8f * Mathf.PI * 2f;
+            emitParams.velocity = new Vector3(Mathf.Cos(angle) * 1.2f, Random.Range(2f, 3.5f), Mathf.Sin(angle) * 1.2f);
+            emitParams.startSize = 0.08f;
+            _starPS.Emit(emitParams, 1);
+        }
+
+        if (_pbLine != null)
+        {
+            for (int pulse = 0; pulse < 3; pulse++)
+            {
+                float t = 0f;
+                while (t < 0.2f)
+                {
+                    t += Time.deltaTime;
+                    float e = Mathf.Sin(Mathf.Clamp01(t / 0.2f) * Mathf.PI);
+                    _pbLine.startColor = Color.Lerp(new Color(0.96f, 0.82f, 0.25f, 0.6f), Color.white, e);
+                    _pbLine.endColor = _pbLine.startColor;
+                    yield return null;
+                }
+            }
+            _pbLine.startColor = new Color(0.96f, 0.82f, 0.25f, 0.6f);
+            _pbLine.endColor = _pbLine.startColor;
+        }
+        _recordPulseRoutine = null;
+    }
 
     public void ClearSessionRings()
     {

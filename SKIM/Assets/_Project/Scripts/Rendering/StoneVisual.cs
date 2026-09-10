@@ -10,6 +10,7 @@ public class StoneVisual : MonoBehaviour
     const float SQUISH_AMOUNT = 0.2f;
 
     IStoneSimulator _sim;
+    IVFXSystem _vfx;
     Renderer _rend;
     MeshFilter _filter;
     Mesh _sphereMesh;
@@ -29,8 +30,15 @@ public class StoneVisual : MonoBehaviour
     {
         while (!ServiceLocator.TryGet<IStoneSimulator>(out _sim))
             yield return null;
+        while (!ServiceLocator.TryGet<IVFXSystem>(out _vfx))
+            yield return null;
 
-        _sim.OnImpact += _ => _squishTimer = 0f;
+        _sim.OnImpact += state =>
+        {
+            _squishTimer = 0f;
+            _vfx.UpdateComboTrail(transform, state.SkipCount);
+        };
+        _sim.OnSunk += _ => _vfx.ClearComboTrail();
     }
 
     void LateUpdate()
