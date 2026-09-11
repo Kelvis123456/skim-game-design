@@ -54,6 +54,52 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
         if (result.Distance > _data.AllTimeRecord) _data.AllTimeRecord = result.Distance;
     }
 
+    // Only one challenge exists today (fase5-uxui's "recorre 100m" mock); this is
+    // the seam where a real daily rotation would plug in later.
+    static readonly DailyChallenge DefaultDailyChallenge = new(
+        DailyChallengeData.ChallengeType.Distance, 100f, 120,
+        "Recorre 100m en una sola tirada");
+
+    public DailyChallenge CurrentDailyChallenge => DefaultDailyChallenge;
+    public float DailyChallengeProgress => _data.LastDailyChallenge?.Progress ?? 0f;
+    public bool DailyChallengeCompleted => _data.LastDailyChallenge?.Completed ?? false;
+    public SaveData RawData => _data;
+
+    public void RegisterDailyChallengeLaunch(LaunchResult result)
+    {
+        EnsureDailyChallengeFreshness();
+        var progress = _data.LastDailyChallenge;
+        if (progress.Completed) return;
+
+        if (result.Distance > progress.Progress)
+            progress.Progress = Mathf.Min(result.Distance, CurrentDailyChallenge.Target);
+
+        if (progress.Progress >= CurrentDailyChallenge.Target)
+        {
+            progress.Completed = true;
+            if (ServiceLocator.TryGet<IEconomySystem>(out var economy))
+                economy.EarnConchas(CurrentDailyChallenge.ConchaReward, "daily_challenge");
+        }
+    }
+
+    // Resets progress when the stored challenge is from a previous UTC day.
+    void EnsureDailyChallengeFreshness()
+    {
+        var today = System.DateTimeOffset.UtcNow.UtcDateTime.Date;
+        var lastDate = _data.LastDailyChallenge != null
+            ? System.DateTimeOffset.FromUnixTimeSeconds(_data.LastDailyChallenge.DateTimestamp).UtcDateTime.Date
+            : System.DateTime.MinValue;
+
+        if (_data.LastDailyChallenge == null || lastDate != today)
+        {
+            _data.LastDailyChallenge = new SaveData.DailyChallengeProgress
+            {
+                ChallengeId = "distance_100",
+                DateTimestamp = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+            };
+        }
+    }
+
     public void Save()
     {
         _data.LastSaveTimestamp = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds();
@@ -71,6 +117,7 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
         catch { _data = new SaveData(); }
 
         _data.TotalSessionCount++;
+        EnsureDailyChallengeFreshness();
     }
 
     string SavePath => Path.Combine(Application.persistentDataPath, FILENAME);

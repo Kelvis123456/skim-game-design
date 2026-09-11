@@ -130,6 +130,28 @@ public class OceanSystemImpl : MonoBehaviour, IOceanSystem
         StartCoroutine(TransitionTo(climate, transitionDuration));
     }
 
+    Coroutine _crestPulseRoutine;
+
+    public void PulseCrestBoost(float boost, float duration)
+    {
+        if (_mat == null) return;
+        if (_crestPulseRoutine != null) StopCoroutine(_crestPulseRoutine);
+        _crestPulseRoutine = StartCoroutine(CrestPulse(boost, duration));
+    }
+
+    IEnumerator CrestPulse(float target, float duration)
+    {
+        float start = _mat.GetFloat("_CrestBoost");
+        float t = 0f;
+        while (t < duration)
+        {
+            t += Time.deltaTime;
+            _mat.SetFloat("_CrestBoost", Mathf.Lerp(start, target, t / duration));
+            yield return null;
+        }
+        _mat.SetFloat("_CrestBoost", target);
+    }
+
     IEnumerator TransitionTo(ClimateData target, float duration)
     {
         var from = _currentClimate;

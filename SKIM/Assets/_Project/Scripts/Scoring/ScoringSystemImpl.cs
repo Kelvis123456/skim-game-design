@@ -6,6 +6,7 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
     public int SessionScore { get; private set; }
     public float CurrentMultiplier { get; private set; } = 1f;
     public float SessionBestDistance { get; private set; }
+    public int LastImpactScoreDelta { get; private set; }
 
     public event Action<float> OnMultiplierChanged;
     public event Action<LaunchResult> OnLaunchCompleted;
@@ -25,6 +26,7 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
         float climateBonus = climate != null ? climate.ClimateMultiplier - 1f : 0f;
         int pts = Mathf.RoundToInt(state.TotalDistance * 10f * CurrentMultiplier);
         pts += Mathf.RoundToInt(pts * climateBonus);
+        LastImpactScoreDelta = Mathf.Max(pts - _launchScore, 0);
         _launchScore = pts;
     }
 

@@ -45,3 +45,10 @@ crashlytics-build.properties
 
 # Visual Studio cache
 .vs/
+
+# Unity crash/autosave recovery scenes
+SKIM/Assets/_Recovery/
+SKIM/Assets/_Recovery.meta
+
+# Portfolio screenshot capture output (SKIM/Capture Portfolio Screenshots)
+/skim_*.png

@@ -100,13 +100,14 @@ public static class SKIMMenuSetup
         CardTextLeft(statsCard.transform, "TU MEJOR TIRADA", 26f, MUTED, 48f, 400f);
         recordLabel = CardTextLeft(statsCard.transform, "RÉCORD: 0.0m", 46f, WHITE, -22f, 600f);
 
-        // Daily challenge card with progress bar
+        // Daily challenge card with progress bar — live data, see DailyChallengeUI
         var challengeCard = Card(panel.transform, "ChallengeCard", new Vector2(0f, -960f), new Vector2(900f, 250f), _card20);
         CardTextLeft(challengeCard.transform, "DESAFÍO DIARIO", 26f, MUTED, 82f, 400f);
-        CardTextLeft(challengeCard.transform, "Recorre 100m en una sola tirada", 32f, WHITE, 28f, 700f);
-        ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 16f), 0.47f);
-        CardTextLeft(challengeCard.transform, "47m / 100m", 26f, MUTED, -78f, 300f);
-        CardTextRight(challengeCard.transform, "+120 conchas", 26f, GOLD, -78f, 300f);
+        var challengeDesc = CardTextLeft(challengeCard.transform, "", 32f, WHITE, 28f, 700f);
+        var challengeFill = ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 16f), 0f);
+        var challengeProgress = CardTextLeft(challengeCard.transform, "", 26f, MUTED, -78f, 400f);
+        var challengeReward = CardTextRight(challengeCard.transform, "", 26f, GOLD, -78f, 300f);
+        WireChallengeUI(challengeCard, challengeDesc, challengeProgress, challengeReward, null, challengeFill);
 
         // Primary CTA — teal pill, 70px tall at 1x (140 at this 2x reference)
         launch = PillButton(panel.transform, "LaunchButton", "LANZAR", new Vector2(0f, -1200f), new Vector2(760f, 140f));
@@ -205,11 +206,12 @@ public static class SKIMMenuSetup
 
         var card = Card(panel.transform, "ChallengeMain", new Vector2(0f, -340f), new Vector2(900f, 340f), _card24);
         CardTextLeft(card.transform, "DISTANCIA", 26f, TEAL, 118f, 400f);
-        CardTextLeft(card.transform, "Recorre 100m en una sola tirada", 34f, WHITE, 62f, 700f);
-        ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 16f), 0.47f);
-        CardTextLeft(card.transform, "47m / 100m  ·  47%", 28f, MUTED, -52f, 420f);
-        CardTextRight(card.transform, "+120 conchas", 30f, GOLD, -52f, 320f);
-        CardTextLeft(card.transform, "Renueva en 6h 12m", 26f, MUTED, -118f, 500f);
+        var desc = CardTextLeft(card.transform, "", 34f, WHITE, 62f, 700f);
+        var fill = ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 16f), 0f);
+        var progressText = CardTextLeft(card.transform, "", 28f, MUTED, -52f, 420f);
+        var reward = CardTextRight(card.transform, "", 30f, GOLD, -52f, 320f);
+        var countdown = CardTextLeft(card.transform, "", 26f, MUTED, -118f, 500f);
+        WireChallengeUI(card, desc, progressText, reward, countdown, fill);
 
         BackButton(panel.transform);
         return panel;
@@ -460,7 +462,9 @@ public static class SKIMMenuSetup
         return go;
     }
 
-    static void ProgressBar(Transform parent, Vector2 pos, Vector2 size, float fill)
+    // Returns the fill Image so a live system can drive it via fillAmount at runtime
+    // (Image.Type.Filled, not Sliced — a static mock bar doesn't need to update).
+    static Image ProgressBar(Transform parent, Vector2 pos, Vector2 size, float fill)
     {
         var track = new GameObject("ProgressTrack", typeof(RectTransform));
         track.transform.SetParent(parent, false);
@@ -477,16 +481,16 @@ public static class SKIMMenuSetup
 
         var fillGO = new GameObject("Fill", typeof(RectTransform));
         fillGO.transform.SetParent(track.transform, false);
-        var frect = fillGO.GetComponent<RectTransform>();
-        frect.anchorMin = new Vector2(0f, 0f);
-        frect.anchorMax = new Vector2(Mathf.Clamp01(fill), 1f);
-        frect.offsetMin = Vector2.zero;
-        frect.offsetMax = Vector2.zero;
+        Stretch(fillGO.GetComponent<RectTransform>());
 
         var fimg = fillGO.AddComponent<Image>();
         fimg.sprite = _pill35;
-        fimg.type = Image.Type.Sliced;
+        fimg.type = Image.Type.Filled;
+        fimg.fillMethod = Image.FillMethod.Horizontal;
+        fimg.fillOrigin = (int)Image.OriginHorizontal.Left;
+        fimg.fillAmount = Mathf.Clamp01(fill);
         fimg.color = TEAL;
+        return fimg;
     }
 
     static Slider SliderRow(Transform parent, string label, Vector2 pos, float value)
@@ -652,6 +656,17 @@ public static class SKIMMenuSetup
         rect.anchorMax = Vector2.one;
         rect.offsetMin = Vector2.zero;
         rect.offsetMax = Vector2.zero;
+    }
+
+    static void WireChallengeUI(GameObject card, TMP_Text desc, TMP_Text progress, TMP_Text reward,
+                                TMP_Text countdown, Image fill)
+    {
+        var ui = card.AddComponent<DailyChallengeUI>();
+        Wire(ui, "_descriptionLabel", desc);
+        Wire(ui, "_progressLabel", progress);
+        Wire(ui, "_rewardLabel", reward);
+        Wire(ui, "_countdownLabel", countdown);
+        Wire(ui, "_progressFill", fill);
     }
 
     static void Wire(object target, string fieldName, object value)

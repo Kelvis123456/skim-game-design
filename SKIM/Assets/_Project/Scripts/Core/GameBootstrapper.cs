@@ -4,6 +4,8 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(-1000)]
 public class GameBootstrapper : MonoBehaviour
 {
+    Transform _stoneVisualTransform;
+
     void Awake()
     {
         DontDestroyOnLoad(gameObject);
@@ -33,6 +35,10 @@ public class GameBootstrapper : MonoBehaviour
 
         try { progression.Load(); }
         catch (System.Exception e) { Debug.LogWarning("[Boot] progression.Load() failed: " + e.Message); }
+
+        // Must run after Load() replaces the save-data reference, or the economy
+        // system ends up bound to a stale/default blob and conchas never persist.
+        economy.Init(progression.RawData);
 
         ServiceLocator.Register<IProgressionSystem>(progression);
         ServiceLocator.Register<IStoneSimulator>(stone);
@@ -70,13 +76,30 @@ public class GameBootstrapper : MonoBehaviour
             vfx.SpawnWaterRing(state.Position, note);
             vfx.SpawnImpactSplash(state.Position, state.Velocity.magnitude);
             scoring.RegisterImpact(state, ocean.CurrentClimate);
+
+            bool isCombo = state.SkipCount >= 3;
+            vfx.SpawnScorePopup(state.Position, scoring.LastImpactScoreDelta, isCombo);
+
+            int comboLevel = state.SkipCount switch
+            {
+                >= 7 => 3,
+                >= 5 => 2,
+                >= 3 => 1,
+                _ => 0,
+            };
+            vfx.UpdateComboTrail(FindStoneVisualTransform(), comboLevel);
         };
 
         stone.OnSunk += _ =>
         {
+            // FinalizeLaunch may fire OnNewSessionRecord synchronously below, which
+            // already pulses the PB line before moving it — skip the plain move here
+            // so a record launch doesn't jump the line before the pulse plays.
             var result = scoring.FinalizeLaunch(stone.CurrentState, ocean.CurrentClimate);
             progression.RegisterLaunch(result);
-            vfx.UpdatePBLine(progression.AllTimeRecord);
+            progression.RegisterDailyChallengeLaunch(result);
+            if (!result.IsNewSessionRecord) vfx.UpdatePBLine(progression.AllTimeRecord);
+            vfx.ClearComboTrail();
             input.IsEnabled = true;
         };
 
@@ -103,5 +126,15 @@ public class GameBootstrapper : MonoBehaviour
 
         if (ocean.CurrentClimate != null)
             audio.SetClimateAmbience(ocean.CurrentClimate);
+    }
+
+    Transform FindStoneVisualTransform()
+    {
+        if (_stoneVisualTransform == null)
+        {
+            var go = GameObject.Find("Stone");
+            if (go != null) _stoneVisualTransform = go.transform;
+        }
+        return _stoneVisualTransform;
     }
 }
