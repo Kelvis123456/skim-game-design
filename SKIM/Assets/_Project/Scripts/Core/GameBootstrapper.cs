@@ -57,6 +57,21 @@ public class GameBootstrapper : MonoBehaviour
         Debug.Log("[Boot] All services registered. Loading Game scene...");
     }
 
+    // GDD fase4 §onboarding: assist fades over the player's first 3 throws ever, then
+    // stays off — TotalLaunchCount is the count of throws already completed, so throw 1
+    // reads 0 here. PermanentAssist (an accessibility setting) always wins full assist.
+    static float AssistFraction(ProgressionSystemImpl progression)
+    {
+        if (progression.PermanentAssist) return 1f;
+        return progression.TotalLaunchCount switch
+        {
+            0 => 1f,
+            1 => 0.8f,
+            2 => 0.5f,
+            _ => 0f,
+        };
+    }
+
     static bool Validate(string label, Object obj)
     {
         if (obj != null) return true;
@@ -81,8 +96,18 @@ public class GameBootstrapper : MonoBehaviour
             var hitCategory = bonusZones.CheckHit(state.Position);
             if (hitCategory.HasValue)
             {
-                scoring.RegisterBonusZoneHit(hitCategory.Value);
-                vfx.SpawnScorePopup(state.Position, (int)hitCategory.Value, false);
+                int points = scoring.RegisterBonusZoneHit(hitCategory.Value);
+                if (hitCategory.Value == BonusZoneCategory.Rainbow)
+                {
+                    // No points to show for the ×2 global-multiplier zone — the ocean
+                    // pulse + resulting multiplier jump on the HUD is the feedback.
+                    audio.PlayChordResolution();
+                    vfx.TriggerChordResolutionPulse();
+                }
+                else
+                {
+                    vfx.SpawnScorePopup(state.Position, points, false);
+                }
             }
         };
 
@@ -106,12 +131,20 @@ public class GameBootstrapper : MonoBehaviour
 
         scoring.OnNewSessionRecord += dist => vfx.TriggerNewRecordEffect(dist);
 
-        input.OnFlickDetected += flickInput =>
+        input.OnFlickDrag += flickInput =>
         {
             var selectedStone = progression.SelectedStone;
             if (selectedStone == null) return;
-            bool assisted = progression.TotalSessionCount <= 3 || progression.PermanentAssist;
-            stone.Launch(flickInput, selectedStone, assisted);
+            float assist = AssistFraction(progression);
+            vfx.ShowTrajectoryArc(stone.GetProjectedArc(flickInput, selectedStone, assist));
+        };
+
+        input.OnFlickDetected += flickInput =>
+        {
+            vfx.HideTrajectoryArc();
+            var selectedStone = progression.SelectedStone;
+            if (selectedStone == null) return;
+            stone.Launch(flickInput, selectedStone, AssistFraction(progression));
             scoring.ResetForNewLaunch();
             bonusZones.GenerateForLaunch();
             input.IsEnabled = false;

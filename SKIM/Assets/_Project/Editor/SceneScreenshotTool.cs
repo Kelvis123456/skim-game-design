@@ -192,7 +192,7 @@ public static class SceneScreenshotTool
 
         scoring?.ResetForNewLaunch();
         zones?.GenerateForLaunch();
-        sim.Launch(new FlickInput(50f, 0.85f, 0.3f), prog?.SelectedStone, false);
+        sim.Launch(new FlickInput(50f, 0.85f, 0.3f), prog?.SelectedStone, 0f);
         Debug.Log("[SceneScreenshotTool] Launch triggered.");
     }
 

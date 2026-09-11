@@ -34,6 +34,7 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
     public float AllTimeRecord => _data.AllTimeRecord;
     public int AllTimeSessionScore => _data.AllTimeSessionScore;
     public int TotalSessionCount => _data.TotalSessionCount;
+    public int TotalLaunchCount => _data.TotalLaunchCount;
 
     public IReadOnlyList<StoneData> AvailableStones => _allStones;
     public IReadOnlyList<ClimateData> AvailableClimates => _allClimates;
@@ -85,6 +86,7 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
 
     public void RegisterLaunch(LaunchResult result)
     {
+        _data.TotalLaunchCount++;
         _data.TotalAccumulatedDistance += result.Distance;
         if (result.Distance > _data.AllTimeRecord) _data.AllTimeRecord = result.Distance;
         _data.AllTimeSessionScore += result.Score;

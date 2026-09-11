@@ -12,6 +12,7 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
     {
         public float XCenter;
         public BonusZoneCategory Category;
+        public float HalfWidth;
         public bool Hit;
         public GameObject Marker;
     }
@@ -19,7 +20,6 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
     IOceanSystem _ocean;
     readonly List<Zone> _zones = new();
 
-    const float ZONE_HALF_WIDTH = 2.5f;
     const int MIN_ZONES = 3;
     const int MAX_ZONES = 5;
     const float MIN_SPACING = 18f;
@@ -53,7 +53,8 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
 
     void SpawnZone(float x, BonusZoneCategory category)
     {
-        var zone = new Zone { XCenter = x, Category = category };
+        float diameter = CategoryDiameter(category);
+        var zone = new Zone { XCenter = x, Category = category, HalfWidth = diameter * 0.5f };
 
         float y = (_ocean?.GetHeightAt(x, _ocean.SessionTime) ?? 0f) + 0.06f;
         var marker = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -61,15 +62,18 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
         Destroy(marker.GetComponent<Collider>());
         marker.transform.SetParent(transform, false);
         marker.transform.position = new Vector3(x, y, 0f);
-        marker.transform.localScale = new Vector3(ZONE_HALF_WIDTH * 2f, 0.015f, ZONE_HALF_WIDTH * 2f);
-        marker.GetComponent<Renderer>().material = MakeMarkerMaterial(category);
+        marker.transform.localScale = new Vector3(diameter, 0.015f, diameter);
+        var renderer = marker.GetComponent<Renderer>();
+        renderer.material = MakeMarkerMaterial(category);
+        if (category == BonusZoneCategory.Rainbow)
+            marker.AddComponent<RainbowZoneHue>();
 
         // Colorblind accessibility (GDD §15): category is never color-only —
         // a label spells it out too.
         var labelGO = new GameObject("Label");
         labelGO.transform.SetParent(marker.transform, false);
         labelGO.transform.localPosition = new Vector3(0f, 1.2f, 0f);
-        labelGO.transform.localScale = new Vector3(1f / (ZONE_HALF_WIDTH * 2f), 1f, 1f / (ZONE_HALF_WIDTH * 2f));
+        labelGO.transform.localScale = new Vector3(1f / diameter, 1f, 1f / diameter);
         var label = labelGO.AddComponent<TextMeshPro>();
         label.text = CategoryLabel(category);
         label.fontSize = 3f;
@@ -78,6 +82,37 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
 
         zone.Marker = marker;
         _zones.Add(zone);
+    }
+
+    // GDD §2.5 diameters, in meters.
+    static float CategoryDiameter(BonusZoneCategory category) => category switch
+    {
+        BonusZoneCategory.Green   => 3.0f,
+        BonusZoneCategory.Blue    => 1.5f,
+        BonusZoneCategory.Gold    => 0.6f,
+        BonusZoneCategory.Rainbow => 1.0f,
+        _ => 1.5f
+    };
+
+    // The "arco iris" zone is the one category defined by NOT having a fixed color —
+    // cycle its hue slowly so it actually reads as a rainbow, matching its "muy rara
+    // (evento)" status instead of just being purple.
+    class RainbowZoneHue : MonoBehaviour
+    {
+        Renderer _renderer;
+        bool _isUniversal;
+        void Awake()
+        {
+            _renderer = GetComponent<Renderer>();
+            _isUniversal = _renderer.material.shader.name.StartsWith("Universal");
+        }
+        void Update()
+        {
+            var c = Color.HSVToRGB(Mathf.Repeat(Time.time * 0.25f, 1f), 0.75f, 1f);
+            var translucent = new Color(c.r, c.g, c.b, 0.55f);
+            if (_isUniversal) _renderer.material.SetColor("_BaseColor", translucent);
+            else _renderer.material.color = translucent;
+        }
     }
 
     static Material MakeMarkerMaterial(BonusZoneCategory category)
@@ -101,8 +136,8 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
     {
         BonusZoneCategory.Green   => "+200",
         BonusZoneCategory.Blue    => "+500",
-        BonusZoneCategory.Gold    => "+900",
-        BonusZoneCategory.Rainbow => "+1500",
+        BonusZoneCategory.Gold    => "+1500",
+        BonusZoneCategory.Rainbow => "×2",
         _ => ""
     };
 
@@ -120,7 +155,7 @@ public class BonusZoneSystemImpl : MonoBehaviour, IBonusZoneSystem
         foreach (var zone in _zones)
         {
             if (zone.Hit) continue;
-            if (Mathf.Abs(impactPosition.x - zone.XCenter) > ZONE_HALF_WIDTH) continue;
+            if (Mathf.Abs(impactPosition.x - zone.XCenter) > zone.HalfWidth) continue;
 
             zone.Hit = true;
             if (zone.Marker != null) Destroy(zone.Marker);

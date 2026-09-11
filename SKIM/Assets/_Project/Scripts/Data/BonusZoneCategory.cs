@@ -1,9 +1,10 @@
-// GDD §2.5/§7.3 — point values double as the enum's underlying value so scoring
-// can cast straight to an int without a lookup table.
+// GDD §2.5/§7.3. Rainbow's effect (a ×2 global multiplier, no points) can't be expressed
+// as a plain point value like the other three, so this no longer doubles as one — see
+// ScoringSystemImpl.RegisterBonusZoneHit for the actual per-category reward.
 public enum BonusZoneCategory
 {
-    Green = 200,
-    Blue = 500,
-    Gold = 900,
-    Rainbow = 1500,
+    Green,
+    Blue,
+    Gold,
+    Rainbow,
 }

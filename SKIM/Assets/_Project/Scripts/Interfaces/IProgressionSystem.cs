@@ -6,6 +6,7 @@ public interface IProgressionSystem
     float AllTimeRecord { get; }
     int AllTimeSessionScore { get; }
     int TotalSessionCount { get; }
+    int TotalLaunchCount { get; }
     void RegisterLaunch(LaunchResult result);
     bool IsStoneUnlocked(StoneData stone);
     bool IsClimateUnlocked(ClimateData climate);

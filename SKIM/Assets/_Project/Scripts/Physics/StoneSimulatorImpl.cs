@@ -32,12 +32,14 @@ public class StoneSimulatorImpl : MonoBehaviour, IStoneSimulator
 
     public void SetOceanReference(IOceanSystem ocean) => _ocean = ocean;
 
-    public void Launch(FlickInput input, StoneData stone, bool assisted = false)
+    const float ASSIST_FORCE_FLOOR = 0.45f;
+
+    public void Launch(FlickInput input, StoneData stone, float assistFraction = 0f)
     {
         _stone = stone;
         _accumulator = 0f;
 
-        float force = assisted ? Mathf.Max(input.Force, 0.45f) : input.Force;
+        float force = Mathf.Lerp(input.Force, Mathf.Max(input.Force, ASSIST_FORCE_FLOOR), assistFraction);
         float speed = force * MAX_LAUNCH_SPEED;
         float rad = input.AngleDegrees * Mathf.Deg2Rad;
 
@@ -133,12 +135,12 @@ public class StoneSimulatorImpl : MonoBehaviour, IStoneSimulator
     LaunchResult BuildResult() =>
         new LaunchResult(_state.TotalDistance, _state.SkipCount, 0, 0f, false, false);
 
-    public Vector3[] GetProjectedArc(FlickInput input, StoneData stone, int points = 3)
+    public Vector3[] GetProjectedArc(FlickInput input, StoneData stone, float assistFraction = 0f, int points = 3)
     {
         if (_ocean == null) return new Vector3[points];
 
         var ghost = new StoneSimulatorGhost(stone, _ocean);
-        ghost.Launch(input);
+        ghost.Launch(input, assistFraction);
 
         var hits = new List<Vector3>();
         float t = 0f;
@@ -191,9 +193,10 @@ class StoneSimulatorGhost
         _stone = stone; _ocean = ocean;
     }
 
-    public void Launch(FlickInput input)
+    public void Launch(FlickInput input, float assistFraction = 0f)
     {
-        float speed = input.Force * 16f;
+        float force = Mathf.Lerp(input.Force, Mathf.Max(input.Force, 0.45f), assistFraction);
+        float speed = force * 16f;
         float rad = input.AngleDegrees * Mathf.Deg2Rad;
         _pos = new Vector3(0f, 0.3f, 0f);
         _vel = new Vector3(Mathf.Cos(rad) * speed, speed * 0.55f, 0f);

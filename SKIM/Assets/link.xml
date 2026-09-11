@@ -1,0 +1,14 @@
+<!--
+  BonusZoneSystemImpl builds its zone markers with GameObject.CreatePrimitive(Cylinder),
+  which internally attaches a CapsuleCollider. Nothing in SKIM's own code references
+  CapsuleCollider by name (the whole game runs on a custom physics sim, no Rigidbody/
+  Collider gameplay anywhere), so IL2CPP's managed stripping removes the Physics module
+  from device builds — CreatePrimitive then fails at runtime with "Can't add component
+  because class 'CapsuleCollider' doesn't exist!" on every bonus zone spawned. This keeps
+  it in the build without lowering the project's overall stripping level.
+-->
+<linker>
+  <assembly fullname="UnityEngine.PhysicsModule">
+    <type fullname="UnityEngine.CapsuleCollider" preserve="all" />
+  </assembly>
+</linker>
