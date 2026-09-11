@@ -88,13 +88,19 @@ public static class SKIMPortfolioCapture
                 {
                     var st = sim.CurrentState;
                     _timer += Time.deltaTime;
-                    // wait past the 3rd skip so the combo trail/light have kicked in,
-                    // then a little more so a splash/score-popup is mid-flight too
+                    // wait past the 3rd skip so the combo trail/light have kicked in
                     bool pastThird = st.Phase == StoneState.StonePhase.InFlight
                                   && st.SkipCount >= 3
                                   && st.CurrentHeight > 0.03f;
                     if (pastThird && !_pastThirdSkip) { _pastThirdSkip = true; _timer = 0f; }
-                    if (_pastThirdSkip && _timer > 0.12f)
+
+                    // The combo trail fades over 0.35s (VFXSystemImpl._comboTrail.time). The
+                    // first few skips after launch happen close together, so capturing too
+                    // soon after crossing the 3rd skip shows 2-3 overlapping bounce arcs still
+                    // fading at once — a tangled coil instead of one clean streak. Waiting
+                    // longer than the fade window guarantees only the most recent skip's arc
+                    // is still visible by capture time.
+                    if (_pastThirdSkip && _timer > 0.45f)
                     {
                         Capture("skim_gameplay.png");
                         _step = Step.ShootGame;
@@ -155,6 +161,11 @@ public static class SKIMPortfolioCapture
         if (!ServiceLocator.TryGet<IStoneSimulator>(out var sim)) return;
         if (!ServiceLocator.TryGet<IProgressionSystem>(out var prog)) return;
         if (ServiceLocator.TryGet<IInputController>(out var input)) input.IsEnabled = true;
+
+        // Otherwise HUDController's first-time tutorial banner covers half the
+        // screen for the whole capture — it only dismisses on a real drag input,
+        // which this simulated launch never fires.
+        prog.HasCompletedTutorial = true;
 
         PullCameraCloser();
         sim.Launch(new FlickInput(10f, 0.95f, 0.2f), prog.SelectedStone, false);
