@@ -23,7 +23,7 @@ public static class SKIMMenuSetup
     static readonly Color WHITE   = Hex("FFFFFF");
     static readonly Color LOCKED  = Hex("091422");
 
-    static Sprite _card16, _card20, _card24, _pill35, _circle;
+    static Sprite _card16, _card20, _card24, _pill35, _pill8, _circle;
 
     [MenuItem("SKIM/Build Menus")]
     public static void BuildMenus()
@@ -99,16 +99,17 @@ public static class SKIMMenuSetup
         CardTextLeft(climateCard.transform, "CLIMA ACTUAL", 26f, MUTED, 48f, 400f);
         climateLabel = CardTextLeft(climateCard.transform, "CALMA", 52f, TEAL, -22f, 500f);
 
-        // Stats card
-        var statsCard = Card(panel.transform, "StatsCard", new Vector2(0f, -720f), new Vector2(900f, 190f), _card20);
+        // Stats card — 40-unit gap from the card above (an 8-unit-module value), same
+        // gap used below to the challenge card; was 30 then 50, an inconsistent rhythm.
+        var statsCard = Card(panel.transform, "StatsCard", new Vector2(0f, -730f), new Vector2(900f, 190f), _card20);
         CardTextLeft(statsCard.transform, "TU MEJOR TIRADA", 26f, MUTED, 48f, 400f);
         recordLabel = CardTextLeft(statsCard.transform, "RÉCORD: 0.0m", 46f, WHITE, -22f, 600f);
 
         // Daily challenge card — labels are populated live by DailyChallengeCardUI
-        var challengeCard = Card(panel.transform, "ChallengeCard", new Vector2(0f, -960f), new Vector2(900f, 250f), _card20);
+        var challengeCard = Card(panel.transform, "ChallengeCard", new Vector2(0f, -990f), new Vector2(900f, 250f), _card20);
         CardTextLeft(challengeCard.transform, "DESAFÍO DIARIO", 26f, MUTED, 82f, 400f);
         var challengeDesc = CardTextLeft(challengeCard.transform, "", 32f, WHITE, 28f, 700f);
-        var challengeFill = ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 16f), 0f);
+        var challengeFill = ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 20f), 0f);
         var challengeProgress = CardTextLeft(challengeCard.transform, "", 26f, MUTED, -78f, 300f);
         var challengeReward = CardTextRight(challengeCard.transform, "", 26f, GOLD, -78f, 300f);
 
@@ -118,25 +119,45 @@ public static class SKIMMenuSetup
         Wire(mainChallengeUI, "_rewardLabel", challengeReward);
         Wire(mainChallengeUI, "_progressFill", challengeFill);
 
-        // Primary CTA — teal pill, 70px tall at 1x (140 at this 2x reference)
-        launch = PillButton(panel.transform, "LaunchButton", "LANZAR", new Vector2(0f, -1200f), new Vector2(760f, 140f));
-
-        // Tab bar
+        // Tab bar and LANZAR are bottom-anchored instead of positioned by absolute
+        // offsets from the top. Previously both used fixed top-relative Y values
+        // authored against the 1080x1920 reference; on this device's actual 20:9
+        // logical canvas that put LANZAR overlapping the challenge card by ~10 units
+        // and left ~640 units of dead space below the tab bar. Anchoring to the
+        // bottom fixes both at the root, on any aspect ratio, instead of just this one.
         var tabs = new GameObject("TabBar", typeof(RectTransform));
         tabs.transform.SetParent(panel.transform, false);
         var tabsRect = tabs.GetComponent<RectTransform>();
-        tabsRect.anchorMin = new Vector2(0.5f, 1f);
-        tabsRect.anchorMax = new Vector2(0.5f, 1f);
-        tabsRect.pivot = new Vector2(0.5f, 1f);
-        tabsRect.anchoredPosition = new Vector2(0f, -1400f);
-        tabsRect.sizeDelta = new Vector2(1080f, 120f);
+        tabsRect.anchorMin = new Vector2(0f, 0f);
+        tabsRect.anchorMax = new Vector2(1f, 0f);
+        tabsRect.pivot = new Vector2(0.5f, 0f);
+        tabsRect.anchoredPosition = new Vector2(0f, 40f);
+        tabsRect.sizeDelta = new Vector2(0f, 120f);
 
-        const float tabW = 190f;
-        tabStones       = TabButton(tabs.transform, "TabStones", "Colección", -432f, tabW);
-        tabClimates     = TabButton(tabs.transform, "TabClimates", "Clima", -216f, tabW);
-        tabChallenge    = TabButton(tabs.transform, "TabChallenge", "Desafíos", 0f, tabW);
-        tabAchievements = TabButton(tabs.transform, "TabAchievements", "Logros", 216f, tabW);
-        tabSettings     = TabButton(tabs.transform, "TabSettings", "Config", 432f, tabW);
+        var tabLayout = tabs.AddComponent<HorizontalLayoutGroup>();
+        tabLayout.padding = new RectOffset(32, 32, 0, 0);
+        tabLayout.spacing = 12f;
+        tabLayout.childAlignment = TextAnchor.MiddleCenter;
+        tabLayout.childControlWidth = true;
+        tabLayout.childControlHeight = true;
+        tabLayout.childForceExpandWidth = true;
+        tabLayout.childForceExpandHeight = true;
+
+        // Fixed pixel widths (±432/±216 for 190-wide chips = 1054 units) used to
+        // overflow the ~966-unit-wide canvas on a 20:9 phone, clipping ~23% off each
+        // outer tab. A layout group sizes chips to the actual available width instead.
+        tabStones       = TabButton(tabs.transform, "TabStones", "Colección");
+        tabClimates     = TabButton(tabs.transform, "TabClimates", "Clima");
+        tabChallenge    = TabButton(tabs.transform, "TabChallenge", "Desafíos");
+        tabAchievements = TabButton(tabs.transform, "TabAchievements", "Logros");
+        tabSettings     = TabButton(tabs.transform, "TabSettings", "Config");
+
+        // Primary CTA — teal pill, 70px tall at 1x (140 at this 2x reference).
+        launch = PillButton(panel.transform, "LaunchButton", "LANZAR", Vector2.zero, new Vector2(760f, 140f));
+        var launchRect = launch.GetComponent<RectTransform>();
+        launchRect.anchorMin = launchRect.anchorMax = new Vector2(0.5f, 0f);
+        launchRect.pivot = new Vector2(0.5f, 0f);
+        launchRect.anchoredPosition = new Vector2(0f, 40f + 120f + 60f);
 
         return panel;
     }
@@ -220,7 +241,7 @@ public static class SKIMMenuSetup
 
         var card = Card(panel.transform, "ChallengeMain", new Vector2(0f, -340f), new Vector2(900f, 340f), _card24);
         var desc = CardTextLeft(card.transform, "", 34f, WHITE, 62f, 700f);
-        var fill = ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 16f), 0f);
+        var fill = ProgressBar(card.transform, new Vector2(0f, 0f), new Vector2(800f, 20f), 0f);
         var progress = CardTextLeft(card.transform, "", 28f, MUTED, -52f, 420f);
         var reward = CardTextRight(card.transform, "", 30f, GOLD, -52f, 320f);
         var reset = CardTextLeft(card.transform, "", 26f, MUTED, -118f, 500f);
@@ -267,6 +288,10 @@ public static class SKIMMenuSetup
         return go;
     }
 
+    // The outer Image IS the border (drawn full-size); a smaller inset "Fill" child on
+    // top shows the actual card color. Previously both were full-size with Fill as the
+    // parent and Border as a child, so Border always drew OVER Fill — no card in the
+    // game ever showed a visible stroke, just a flat block of the border color.
     static GameObject Card(Transform parent, string name, Vector2 pos, Vector2 size, Sprite sprite)
     {
         var go = new GameObject(name, typeof(RectTransform));
@@ -277,20 +302,23 @@ public static class SKIMMenuSetup
         rect.anchoredPosition = pos;
         rect.sizeDelta = size;
 
-        var img = go.AddComponent<Image>();
-        img.sprite = sprite;
-        img.type = Image.Type.Sliced;
-        img.color = CARD;
+        var border = go.AddComponent<Image>();
+        border.sprite = sprite;
+        border.type = Image.Type.Sliced;
+        border.color = new Color(BORDER.r, BORDER.g, BORDER.b, 0.9f);
 
-        var border = new GameObject("Border", typeof(RectTransform));
-        border.transform.SetParent(go.transform, false);
-        Stretch(border.GetComponent<RectTransform>());
-        var bimg = border.AddComponent<Image>();
-        bimg.sprite = sprite;
-        bimg.type = Image.Type.Sliced;
-        bimg.color = new Color(BORDER.r, BORDER.g, BORDER.b, 0.9f);
-        bimg.raycastTarget = false;
-        border.transform.SetAsFirstSibling();
+        var fill = new GameObject("Fill", typeof(RectTransform));
+        fill.transform.SetParent(go.transform, false);
+        var frect = fill.GetComponent<RectTransform>();
+        frect.anchorMin = Vector2.zero;
+        frect.anchorMax = Vector2.one;
+        frect.offsetMin = new Vector2(3f, 3f);
+        frect.offsetMax = new Vector2(-3f, -3f);
+        var fimg = fill.AddComponent<Image>();
+        fimg.sprite = sprite;
+        fimg.type = Image.Type.Sliced;
+        fimg.color = CARD;
+        fimg.raycastTarget = false;
 
         return go;
     }
@@ -362,8 +390,11 @@ public static class SKIMMenuSetup
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
 
-        var tmp = Label(go.transform, text, 44f, WHITE, Vector2.zero, size);
+        // Dark-on-teal instead of white-on-teal: WHITE/TEAL is ~2.2:1 (fails the 3:1 floor
+        // for large text and looks washed out); BG/TEAL is ~8:1 and reads far crisper.
+        var tmp = Label(go.transform, text, 44f, BG, Vector2.zero, size);
         tmp.fontStyle = FontStyles.Bold;
+        tmp.characterSpacing = 6f;
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.anchoredPosition = Vector2.zero;
@@ -371,28 +402,33 @@ public static class SKIMMenuSetup
         return btn;
     }
 
-    static Button TabButton(Transform parent, string name, string text, float x, float width = 230f)
+    // A HorizontalLayoutGroup child — width comes from the parent layout, not a fixed
+    // number, so 5 tabs always fit the real screen width instead of a hardcoded 190.
+    static Button TabButton(Transform parent, string name, string text)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
-        var rect = go.GetComponent<RectTransform>();
-        rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.pivot = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(x, 0f);
-        rect.sizeDelta = new Vector2(width, 100f);
 
+        // Raised from CARD@0.85 (which blends to within 1.08:1 of the background,
+        // effectively invisible) to BORDER@0.6 for a chip that actually reads as one.
         var img = go.AddComponent<Image>();
         img.sprite = _card16;
         img.type = Image.Type.Sliced;
-        img.color = new Color(CARD.r, CARD.g, CARD.b, 0.85f);
+        img.color = new Color(BORDER.r, BORDER.g, BORDER.b, 0.6f);
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
 
-        var tmp = Label(go.transform, text, 26f, MUTED, Vector2.zero, new Vector2(width - 10f, 90f));
-        tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
-        tmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        tmp.rectTransform.anchoredPosition = Vector2.zero;
+        var tmp = Label(go.transform, text, 26f, MUTED, Vector2.zero, Vector2.zero);
+        tmp.enableAutoSizing = true;
+        tmp.fontSizeMin = 18f;
+        tmp.fontSizeMax = 26f;
+        var trect = tmp.rectTransform;
+        trect.anchorMin = Vector2.zero;
+        trect.anchorMax = Vector2.one;
+        trect.pivot = new Vector2(0.5f, 0.5f);
+        trect.offsetMin = new Vector2(6f, 0f);
+        trect.offsetMax = new Vector2(-6f, 0f);
 
         return btn;
     }
@@ -510,20 +546,21 @@ public static class SKIMMenuSetup
         rect.sizeDelta = size;
 
         var timg = track.AddComponent<Image>();
-        timg.sprite = _pill35;
+        timg.sprite = _pill8;
         timg.type = Image.Type.Sliced;
-        timg.color = LOCKED;
+        timg.color = new Color(BORDER.r, BORDER.g, BORDER.b, 0.5f);
 
         var fillGO = new GameObject("Fill", typeof(RectTransform));
         fillGO.transform.SetParent(track.transform, false);
         var frect = fillGO.GetComponent<RectTransform>();
         frect.anchorMin = new Vector2(0f, 0f);
-        frect.anchorMax = new Vector2(Mathf.Clamp01(fill), 1f);
+        // Even 0% shows a small teal tick instead of reading as an empty hole.
+        frect.anchorMax = new Vector2(Mathf.Max(Mathf.Clamp01(fill), 0.025f), 1f);
         frect.offsetMin = Vector2.zero;
         frect.offsetMax = Vector2.zero;
 
         var fimg = fillGO.AddComponent<Image>();
-        fimg.sprite = _pill35;
+        fimg.sprite = _pill8;
         fimg.type = Image.Type.Sliced;
         fimg.color = TEAL;
 
@@ -546,9 +583,9 @@ public static class SKIMMenuSetup
         bg.transform.SetParent(go.transform, false);
         Stretch(bg.GetComponent<RectTransform>());
         var bgImg = bg.AddComponent<Image>();
-        bgImg.sprite = _pill35;
+        bgImg.sprite = _pill8;
         bgImg.type = Image.Type.Sliced;
-        bgImg.color = LOCKED;
+        bgImg.color = new Color(BORDER.r, BORDER.g, BORDER.b, 0.5f);
 
         var fillArea = new GameObject("Fill Area", typeof(RectTransform));
         fillArea.transform.SetParent(go.transform, false);
@@ -558,7 +595,7 @@ public static class SKIMMenuSetup
         fill.transform.SetParent(fillArea.transform, false);
         Stretch(fill.GetComponent<RectTransform>());
         var fillImg = fill.AddComponent<Image>();
-        fillImg.sprite = _pill35;
+        fillImg.sprite = _pill8;
         fillImg.type = Image.Type.Sliced;
         fillImg.color = TEAL;
 
@@ -599,9 +636,9 @@ public static class SKIMMenuSetup
         rect.sizeDelta = new Vector2(110f, 56f);
 
         var bgImg = go.AddComponent<Image>();
-        bgImg.sprite = _pill35;
+        bgImg.sprite = _pill8;
         bgImg.type = Image.Type.Sliced;
-        bgImg.color = isOn ? TEAL : LOCKED;
+        bgImg.color = isOn ? TEAL : new Color(BORDER.r, BORDER.g, BORDER.b, 0.6f);
 
         var knob = new GameObject("Checkmark", typeof(RectTransform));
         knob.transform.SetParent(go.transform, false);
@@ -631,6 +668,7 @@ public static class SKIMMenuSetup
         _card20 = RoundedSprite("card20", 40);
         _card24 = RoundedSprite("card24", 48);
         _pill35 = RoundedSprite("pill35", 70);
+        _pill8  = RoundedSprite("pill8", 8);
         _circle = RoundedSprite("circle", 32, 68);
     }
 
