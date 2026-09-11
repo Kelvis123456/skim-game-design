@@ -2,7 +2,7 @@
 
 **Una piedra. Un flick. El océano entero.**
 
-SKIM es un concepto original de videojuego móvil: lanzas piedras planas de un flick sobre un océano procedural y las haces saltar usando física real de rebote. Un solo gesto controla tres variables a la vez — ángulo, fuerza y spin — y el mar nunca es igual dos veces. Pensado con la misma fórmula de "una acción, un resultado satisfactorio, repetir" que hizo adictivos juegos como Helix Jump, pero con una metáfora completamente nueva.
+SKIM es un concepto original de videojuego móvil: lanzas piedras planas de un flick sobre un océano procedural y las haces saltar usando física real de rebote. Un solo gesto controla tres variables a la vez — ángulo, fuerza y spin — y el mar nunca es igual dos veces. Pensado con la fórmula arcade de "una acción, un resultado satisfactorio, repetir", pero con una metáfora completamente nueva.
 
 ## Qué hay en este repositorio
 
