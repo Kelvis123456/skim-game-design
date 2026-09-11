@@ -26,6 +26,14 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
     static readonly Color COMBO_GLOW_COLOR = new Color(0f, 0.77f, 0.8f);
     static readonly Color GOLD = new Color(0.96f, 0.82f, 0.25f);
 
+    // Fase4-GDD §2.4: 3 semi-transparent points showing the initial trajectory only (not
+    // bounces) while the player is dragging, so the angle/force gesture is perceptible
+    // before release. Plain GameObjects, not pooled — there are only ever 3, held for the
+    // life of the game scene.
+    GameObject[] _trajectoryDots;
+    const float TRAJECTORY_DOT_RADIUS = 0.05f;
+    static readonly Color TRAJECTORY_DOT_COLOR = new Color(1f, 1f, 1f, 0.45f);
+
     static readonly Color[] NOTE_COLORS =
     {
         new Color(0f, 0.77f, 0.8f),    // C — teal
@@ -80,6 +88,34 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
         _starPS = CreateParticleSystem("StarPS", GOLD, 16, 0.3f);
 
         PrewarmRingPool();
+        CreateTrajectoryDots();
+    }
+
+    void CreateTrajectoryDots()
+    {
+        _trajectoryDots = new GameObject[3];
+        for (int i = 0; i < _trajectoryDots.Length; i++)
+        {
+            var go = new GameObject($"TrajectoryDot{i}");
+            go.transform.SetParent(transform);
+
+            var lr = go.AddComponent<LineRenderer>();
+            lr.useWorldSpace = false;
+            lr.loop = true;
+            lr.positionCount = 16;
+            lr.widthMultiplier = 0.025f;
+            lr.material = CreateRingMaterial(TRAJECTORY_DOT_COLOR);
+            lr.startColor = TRAJECTORY_DOT_COLOR;
+            lr.endColor = TRAJECTORY_DOT_COLOR;
+            for (int p = 0; p < 16; p++)
+            {
+                float a = p / 16f * Mathf.PI * 2f;
+                lr.SetPosition(p, new Vector3(Mathf.Cos(a), 0f, Mathf.Sin(a)) * TRAJECTORY_DOT_RADIUS);
+            }
+
+            go.SetActive(false);
+            _trajectoryDots[i] = go;
+        }
     }
 
     ParticleSystem CreateParticleSystem(string name, Color color, int maxParticles, float gravityModifier)
@@ -366,5 +402,20 @@ public class VFXSystemImpl : MonoBehaviour, IVFXSystem
         if (_pbLine == null) return;
         _pbLine.SetPosition(0, new Vector3(dist, 0.05f, -5f));
         _pbLine.SetPosition(1, new Vector3(dist, 0.05f, 5f));
+    }
+
+    public void ShowTrajectoryArc(Vector3[] points)
+    {
+        for (int i = 0; i < _trajectoryDots.Length; i++)
+        {
+            if (i >= points.Length) { _trajectoryDots[i].SetActive(false); continue; }
+            _trajectoryDots[i].transform.position = points[i] + Vector3.up * 0.02f;
+            _trajectoryDots[i].SetActive(true);
+        }
+    }
+
+    public void HideTrajectoryArc()
+    {
+        foreach (var dot in _trajectoryDots) dot.SetActive(false);
     }
 }

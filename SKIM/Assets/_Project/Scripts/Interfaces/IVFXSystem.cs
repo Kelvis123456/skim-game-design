@@ -12,4 +12,6 @@ public interface IVFXSystem
     void TriggerChordResolutionPulse();
     void ClearSessionRings();
     void UpdatePBLine(float distance);
+    void ShowTrajectoryArc(Vector3[] points);
+    void HideTrajectoryArc();
 }

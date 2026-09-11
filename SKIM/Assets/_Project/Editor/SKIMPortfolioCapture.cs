@@ -168,7 +168,7 @@ public static class SKIMPortfolioCapture
         prog.HasCompletedTutorial = true;
 
         PullCameraCloser();
-        sim.Launch(new FlickInput(10f, 0.95f, 0.2f), prog.SelectedStone, false);
+        sim.Launch(new FlickInput(10f, 0.95f, 0.2f), prog.SelectedStone, 0f);
     }
 
     static void PullCameraCloser()

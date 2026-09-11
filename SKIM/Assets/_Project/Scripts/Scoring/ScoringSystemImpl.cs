@@ -14,18 +14,34 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
     int _launchScore;
     int _bonusZones;
     int _bonusPoints;
+    float _bonusMultiplierAdd;
+    float _rainbowMultiplierBoost = 1f;
     float _maxMultiplier;
     float _sessionAllTimeRecord;
 
-    public void RegisterBonusZoneHit(BonusZoneCategory category)
+    // GDD §7.3 — Green/Blue/Gold add flat points, Blue/Gold also add to the multiplier;
+    // Rainbow ("Especial", very rare) adds no points and instead doubles the multiplier
+    // for the rest of THIS launch. Returns the points just awarded (0 for Rainbow) so the
+    // caller can size a score popup without re-deriving the reward table.
+    public int RegisterBonusZoneHit(BonusZoneCategory category)
     {
         _bonusZones++;
-        _bonusPoints += (int)category;
+        int points;
+        switch (category)
+        {
+            case BonusZoneCategory.Green: points = 200; break;
+            case BonusZoneCategory.Blue: points = 500; _bonusMultiplierAdd += 0.3f; break;
+            case BonusZoneCategory.Gold: points = 1500; _bonusMultiplierAdd += 0.8f; break;
+            case BonusZoneCategory.Rainbow: points = 0; _rainbowMultiplierBoost = 2f; break;
+            default: points = 0; break;
+        }
+        _bonusPoints += points;
+        return points;
     }
 
     public void RegisterImpact(StoneState state, ClimateData climate)
     {
-        CurrentMultiplier = StoneSimulatorImpl.GetMultiplier(state.SkipCount);
+        CurrentMultiplier = (StoneSimulatorImpl.GetMultiplier(state.SkipCount) + _bonusMultiplierAdd) * _rainbowMultiplierBoost;
         if (CurrentMultiplier > _maxMultiplier) _maxMultiplier = CurrentMultiplier;
         OnMultiplierChanged?.Invoke(CurrentMultiplier);
 
@@ -65,6 +81,8 @@ public class ScoringSystemImpl : MonoBehaviour, IScoringSystem
         _launchScore = 0;
         _bonusZones = 0;
         _bonusPoints = 0;
+        _bonusMultiplierAdd = 0f;
+        _rainbowMultiplierBoost = 1f;
         _maxMultiplier = 1f;
         CurrentMultiplier = 1f;
     }
