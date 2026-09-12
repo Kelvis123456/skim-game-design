@@ -389,6 +389,7 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         // Dark-on-teal instead of white-on-teal: WHITE/TEAL is ~2.2:1 (fails the 3:1 floor
         // for large text and looks washed out); BG/TEAL is ~8:1 and reads far crisper.
@@ -418,6 +419,7 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var tmp = Label(go.transform, text, 26f, MUTED, Vector2.zero, Vector2.zero);
         tmp.enableAutoSizing = true;
@@ -447,6 +449,7 @@ public static class SKIMMenuSetup
         img.color = new Color(0f, 0f, 0f, 0f);
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var tmp = Label(go.transform, text, 30f, color, Vector2.zero, size);
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
@@ -498,6 +501,7 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var le = go.AddComponent<LayoutElement>();
         le.minHeight = 150f;

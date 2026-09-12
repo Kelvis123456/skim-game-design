@@ -185,6 +185,8 @@ public static class SKIMSetup
             var retryRect = retryImg.rectTransform;
             retryRect.sizeDelta = new Vector2(500f, 110f);
             retryRect.anchoredPosition = new Vector2(0f, -230f);
+            if (retryBtnGO.GetComponent<ButtonPressFeedback>() == null)
+                retryBtnGO.AddComponent<ButtonPressFeedback>();
 
             var retryText = retryBtnGO.transform.Find("RetryText")?.GetComponent<TMPro.TextMeshProUGUI>();
             if (retryText != null)
@@ -599,6 +601,7 @@ public static class SKIMSetup
         retryRect.anchoredPosition = new Vector2(0f, -110f);
         retryRect.sizeDelta = new Vector2(200f, 50f);
         var retryBtn = retryBtnGO.AddComponent<UnityEngine.UI.Button>();
+        retryBtnGO.AddComponent<ButtonPressFeedback>();
         var retryTextGO = CreateLabel(retryBtnGO.transform, "RetryText", "OTRA VEZ", 22f, Vector2.zero);
 
         // HUDController and PostLaunchController are self-contained:
