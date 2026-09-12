@@ -25,6 +25,16 @@ public static class SKIMMenuSetup
 
     static Sprite _card16, _card20, _card24, _pill35, _pill8, _circle;
 
+    const string FONT_PATH = "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Oswald Bold SDF.asset";
+    static TMP_FontAsset _font;
+
+    // Every screen was rendering in TMP's stock LiberationSans — generic and
+    // unrelated to the rest of the geometric art direction. Oswald is bundled
+    // with the TMP package already (OFL-licensed, safe to ship) and its SDF
+    // asset is set to Dynamic population, so accented Spanish glyphs (Á, Í,
+    // Ñ...) get added to the atlas on demand instead of showing as tofu.
+    static TMP_FontAsset GameFont() => _font ??= AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT_PATH);
+
     [MenuItem("SKIM/Build Menus")]
     public static void BuildMenus()
     {
@@ -285,6 +295,7 @@ public static class SKIMMenuSetup
 
         var img = go.AddComponent<Image>();
         img.color = new Color(BG.r, BG.g, BG.b, 0.94f);
+        go.AddComponent<CanvasGroup>(); // lets MainMenuController cross-fade panel switches
         return go;
     }
 
@@ -358,6 +369,7 @@ public static class SKIMMenuSetup
         var go = new GameObject("Label", typeof(RectTransform));
         go.transform.SetParent(parent, false);
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.font = GameFont();
         tmp.text = text;
         tmp.fontSize = size;
         tmp.color = color;
@@ -389,6 +401,7 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         // Dark-on-teal instead of white-on-teal: WHITE/TEAL is ~2.2:1 (fails the 3:1 floor
         // for large text and looks washed out); BG/TEAL is ~8:1 and reads far crisper.
@@ -418,6 +431,7 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var tmp = Label(go.transform, text, 26f, MUTED, Vector2.zero, Vector2.zero);
         tmp.enableAutoSizing = true;
@@ -447,6 +461,7 @@ public static class SKIMMenuSetup
         img.color = new Color(0f, 0f, 0f, 0f);
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var tmp = Label(go.transform, text, 30f, color, Vector2.zero, size);
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
@@ -498,16 +513,46 @@ public static class SKIMMenuSetup
 
         var btn = go.AddComponent<Button>();
         btn.targetGraphic = img;
+        go.AddComponent<ButtonPressFeedback>();
 
         var le = go.AddComponent<LayoutElement>();
         le.minHeight = 150f;
         le.preferredHeight = 150f;
 
-        var nameLabel = CardTextLeft(go.transform, "Nombre", 38f, WHITE, 26f, 500f);
+        // Thumbnail: a solid-color swatch pulled from the row's own data (stone
+        // palette / climate water color) rather than an imported icon — same
+        // no-imported-art direction as the stone meshes themselves.
+        var thumbBorder = new GameObject("ThumbnailBorder", typeof(RectTransform));
+        thumbBorder.transform.SetParent(go.transform, false);
+        var tbRect = thumbBorder.GetComponent<RectTransform>();
+        tbRect.anchorMin = tbRect.anchorMax = new Vector2(0f, 0.5f);
+        tbRect.pivot = new Vector2(0f, 0.5f);
+        tbRect.anchoredPosition = new Vector2(30f, 0f);
+        tbRect.sizeDelta = new Vector2(92f, 92f);
+        var tbImg = thumbBorder.AddComponent<Image>();
+        tbImg.sprite = _circle;
+        tbImg.type = Image.Type.Sliced;
+        tbImg.color = new Color(0f, 0f, 0f, 0.25f);
+        tbImg.raycastTarget = false;
+
+        var thumb = new GameObject("Thumbnail", typeof(RectTransform));
+        thumb.transform.SetParent(go.transform, false);
+        var thumbRect = thumb.GetComponent<RectTransform>();
+        thumbRect.anchorMin = thumbRect.anchorMax = new Vector2(0f, 0.5f);
+        thumbRect.pivot = new Vector2(0f, 0.5f);
+        thumbRect.anchoredPosition = new Vector2(34f, 0f);
+        thumbRect.sizeDelta = new Vector2(84f, 84f);
+        var thumbImg = thumb.AddComponent<Image>();
+        thumbImg.sprite = _circle;
+        thumbImg.type = Image.Type.Sliced;
+        thumbImg.color = MUTED;
+        thumbImg.raycastTarget = false;
+
+        var nameLabel = CardTextLeft(go.transform, "Nombre", 38f, WHITE, 26f, 380f, padding: 148f);
         nameLabel.gameObject.name = "Name";
         nameLabel.fontStyle = FontStyles.Bold;
 
-        var descLabel = CardTextLeft(go.transform, "Descripción", 26f, MUTED, -30f, 620f);
+        var descLabel = CardTextLeft(go.transform, "Descripción", 26f, MUTED, -30f, 500f, padding: 148f);
         descLabel.gameObject.name = "Desc";
 
         // The art direction calls for a lock icon; with no icon font shipped yet the

@@ -85,10 +85,15 @@ Shader "SKIM/GradientSky"
                 // unambiguously read as sky rather than more water.
                 if (dir.y > 0.08)
                 {
-                    float3 cell = floor(dir * _StarDensity);
+                    float3 scaled = dir * _StarDensity;
+                    float3 cell = floor(scaled);
                     float h = hash13(cell);
+                    // Shrink each lit cell down to a small dot around its center instead
+                    // of lighting the whole cell — otherwise "stars" read as flat blocks.
+                    float distToCenter = length(frac(scaled) - 0.5);
+                    float dotShape = 1.0 - smoothstep(0.05, 0.22, distToCenter);
                     float twinkle = 0.65 + 0.35 * sin(_Time.y * (2.0 + h * 3.0) + h * 20.0);
-                    float star = smoothstep(0.982, 1.0, h) * twinkle * saturate((dir.y - 0.08) * 4.0);
+                    float star = step(0.982, h) * dotShape * twinkle * saturate((dir.y - 0.08) * 4.0);
                     col.rgb += star * _StarOpacity;
                 }
 
