@@ -25,6 +25,16 @@ public static class SKIMMenuSetup
 
     static Sprite _card16, _card20, _card24, _pill35, _pill8, _circle;
 
+    const string FONT_PATH = "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Oswald Bold SDF.asset";
+    static TMP_FontAsset _font;
+
+    // Every screen was rendering in TMP's stock LiberationSans — generic and
+    // unrelated to the rest of the geometric art direction. Oswald is bundled
+    // with the TMP package already (OFL-licensed, safe to ship) and its SDF
+    // asset is set to Dynamic population, so accented Spanish glyphs (Á, Í,
+    // Ñ...) get added to the atlas on demand instead of showing as tofu.
+    static TMP_FontAsset GameFont() => _font ??= AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT_PATH);
+
     [MenuItem("SKIM/Build Menus")]
     public static void BuildMenus()
     {
@@ -285,6 +295,7 @@ public static class SKIMMenuSetup
 
         var img = go.AddComponent<Image>();
         img.color = new Color(BG.r, BG.g, BG.b, 0.94f);
+        go.AddComponent<CanvasGroup>(); // lets MainMenuController cross-fade panel switches
         return go;
     }
 
@@ -358,6 +369,7 @@ public static class SKIMMenuSetup
         var go = new GameObject("Label", typeof(RectTransform));
         go.transform.SetParent(parent, false);
         var tmp = go.AddComponent<TextMeshProUGUI>();
+        tmp.font = GameFont();
         tmp.text = text;
         tmp.fontSize = size;
         tmp.color = color;

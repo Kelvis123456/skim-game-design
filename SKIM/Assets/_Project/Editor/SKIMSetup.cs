@@ -12,6 +12,10 @@ public static class SKIMSetup
 {
     const string DONE_KEY = "SKIM_Setup_v7_Done";
 
+    const string FONT_PATH = "Assets/TextMesh Pro/Examples & Extras/Resources/Fonts & Materials/Oswald Bold SDF.asset";
+    static TMPro.TMP_FontAsset _font;
+    static TMPro.TMP_FontAsset GameFont() => _font ??= AssetDatabase.LoadAssetAtPath<TMPro.TMP_FontAsset>(FONT_PATH);
+
     static SKIMSetup()
     {
         EditorApplication.delayCall += Run;
@@ -89,13 +93,28 @@ public static class SKIMSetup
         SetLabelRect(hud.transform, "DistanceLabel", new Vector2(0f, 1f), new Vector2(margin, -margin), new Vector2(200f, 60f));
         SetLabelRect(hud.transform, "MultiplierBadge", new Vector2(1f, 1f), new Vector2(-margin, -margin), new Vector2(160f, 60f));
 
+        foreach (var n in new[] { "ScoreLabel", "DistanceLabel", "MultiplierBadge" })
+        {
+            var t = hud.transform.Find(n)?.GetComponent<TMPro.TextMeshProUGUI>();
+            if (t != null) t.font = GameFont();
+        }
+
         // A bare "0" with no unit/icon reads as meaningless on a first launch.
         var scoreLabelGO = hud.transform.Find("ScoreLabel");
         if (scoreLabelGO != null)
         {
+            // Destroy-and-recreate rather than skip-if-exists: an earlier version of
+            // this patch had no guard at all (duplicated this on every re-run until
+            // fixed), and a plain "skip if found" would leave those old duplicates in
+            // place and never let a style/font change reach an already-created one.
+            for (int i = scoreLabelGO.childCount - 1; i >= 0; i--)
+                if (scoreLabelGO.GetChild(i).name == "ScoreCaption")
+                    Object.DestroyImmediate(scoreLabelGO.GetChild(i).gameObject);
+
             var caption = new GameObject("ScoreCaption", typeof(RectTransform));
             caption.transform.SetParent(scoreLabelGO, false);
             var tmp = caption.AddComponent<TMPro.TextMeshProUGUI>();
+            tmp.font = GameFont();
             tmp.text = "PUNTOS";
             tmp.fontSize = 16f;
             tmp.color = new Color(0.553f, 0.706f, 0.831f, 0.85f);
@@ -165,6 +184,7 @@ public static class SKIMSetup
         var recordBadge = postLaunch.transform.Find("RecordBadge")?.GetComponent<TMPro.TextMeshProUGUI>();
         if (recordBadge != null)
         {
+            recordBadge.font = GameFont();
             recordBadge.fontSize = 30f;
             recordBadge.fontStyle = FontStyles.Bold;
             recordBadge.characterSpacing = 2f;
@@ -191,6 +211,7 @@ public static class SKIMSetup
             var retryText = retryBtnGO.transform.Find("RetryText")?.GetComponent<TMPro.TextMeshProUGUI>();
             if (retryText != null)
             {
+                retryText.font = GameFont();
                 retryText.fontSize = 34f;
                 retryText.fontStyle = FontStyles.Bold;
                 retryText.color = new Color(0.02f, 0.05f, 0.09f);
@@ -205,6 +226,7 @@ public static class SKIMSetup
         var labelT = parent.Find(labelName);
         if (labelT == null) return;
         var label = labelT.GetComponent<TMPro.TextMeshProUGUI>();
+        label.font = GameFont();
         label.fontSize = labelSize;
         label.fontStyle = style;
         label.color = labelColor;
@@ -214,10 +236,14 @@ public static class SKIMSetup
 
         // A bare "0.0m" / "25" / "8,500" tells the player nothing about which
         // metric it is — a small MUTED uppercase caption above each fixes that.
-        if (labelT.Find(captionName) != null) return; // idempotent — patch may re-run
+        // Destroy-and-recreate (not skip-if-exists) so a style/font change here
+        // always reaches a caption created by an earlier patch run.
+        var existingCaption = labelT.Find(captionName);
+        if (existingCaption != null) Object.DestroyImmediate(existingCaption.gameObject);
         var captionGO = new GameObject(captionName, typeof(RectTransform));
         captionGO.transform.SetParent(labelT, false);
         var caption = captionGO.AddComponent<TMPro.TextMeshProUGUI>();
+        caption.font = GameFont();
         caption.text = captionText;
         caption.fontSize = 22f;
         caption.color = new Color(0.553f, 0.706f, 0.831f, 0.8f);
@@ -292,6 +318,7 @@ public static class SKIMSetup
 
             var titleTmp = new GameObject("Title", typeof(RectTransform)).AddComponent<TMPro.TextMeshProUGUI>();
             titleTmp.transform.SetParent(canvasGO.transform, false);
+            titleTmp.font = GameFont();
             titleTmp.text = "SKIM";
             titleTmp.fontSize = 140f;
             titleTmp.alignment = TMPro.TextAlignmentOptions.Center;
@@ -303,6 +330,7 @@ public static class SKIMSetup
 
             var subTmp = new GameObject("Subtitle", typeof(RectTransform)).AddComponent<TMPro.TextMeshProUGUI>();
             subTmp.transform.SetParent(canvasGO.transform, false);
+            subTmp.font = GameFont();
             subTmp.text = "Una piedra. Un flick. El océano entero.";
             subTmp.fontSize = 32f;
             subTmp.alignment = TMPro.TextAlignmentOptions.Center;
@@ -531,6 +559,7 @@ public static class SKIMSetup
         var scoreLabelGO = new GameObject("ScoreLabel");
         scoreLabelGO.transform.SetParent(hudGO.transform, false);
         var scoreLabel = scoreLabelGO.AddComponent<TMPro.TextMeshProUGUI>();
+        scoreLabel.font = GameFont();
         scoreLabel.text = "0";
         scoreLabel.fontSize = 48f;
         scoreLabel.alignment = TMPro.TextAlignmentOptions.Center;
@@ -546,6 +575,7 @@ public static class SKIMSetup
         var distGO = new GameObject("DistanceLabel");
         distGO.transform.SetParent(hudGO.transform, false);
         var distLabel = distGO.AddComponent<TMPro.TextMeshProUGUI>();
+        distLabel.font = GameFont();
         distLabel.text = "0m";
         distLabel.fontSize = 28f;
         distLabel.color = new Color(0.55f, 0.71f, 0.83f);
@@ -560,6 +590,7 @@ public static class SKIMSetup
         var multGO = new GameObject("MultiplierBadge");
         multGO.transform.SetParent(hudGO.transform, false);
         var multLabel = multGO.AddComponent<TMPro.TextMeshProUGUI>();
+        multLabel.font = GameFont();
         multLabel.text = "×1.0";
         multLabel.fontSize = 28f;
         multLabel.color = new Color(0f, 0.77f, 0.8f);
@@ -674,6 +705,7 @@ public static class SKIMSetup
         var go = new GameObject(name);
         go.transform.SetParent(parent, false);
         var tmp = go.AddComponent<TMPro.TextMeshProUGUI>();
+        tmp.font = GameFont();
         tmp.text = text;
         tmp.fontSize = size;
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
