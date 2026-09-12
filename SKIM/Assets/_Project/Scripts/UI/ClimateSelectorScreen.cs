@@ -31,6 +31,13 @@ public class ClimateSelectorScreen : MonoBehaviour
 
             row.transform.Find("Name")?.GetComponent<TMP_Text>()?.SetText(climate.ClimateName);
 
+            var thumb = row.transform.Find("Thumbnail")?.GetComponent<Image>();
+            if (thumb)
+            {
+                var color = climate.WaterSurfaceColor;
+                thumb.color = isUnlocked ? color : Dim(color);
+            }
+
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
             if (desc) desc.text = isUnlocked
                 ? $"{climate.Harmonics.Length} olas  ×{climate.ClimateMultiplier:F1} score  ·  Récord: {_prog.BestDistanceForClimate(climate.ClimateName):0.0}m"
@@ -60,5 +67,13 @@ public class ClimateSelectorScreen : MonoBehaviour
 
         if (_unlockedCountLabel)
             _unlockedCountLabel.text = $"{unlocked}/{_prog.AvailableClimates.Count} niveles";
+    }
+
+    // Mutes a swatch toward a fixed mid-gray for the locked state — see the
+    // matching helper in StoneSelectorScreen for why this isn't a plain darken.
+    static Color Dim(Color c)
+    {
+        var muted = Color.Lerp(c, new Color(0.42f, 0.46f, 0.52f), 0.6f);
+        return new Color(muted.r, muted.g, muted.b, 0.9f);
     }
 }

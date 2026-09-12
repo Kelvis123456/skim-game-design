@@ -503,11 +503,40 @@ public static class SKIMMenuSetup
         le.minHeight = 150f;
         le.preferredHeight = 150f;
 
-        var nameLabel = CardTextLeft(go.transform, "Nombre", 38f, WHITE, 26f, 500f);
+        // Thumbnail: a solid-color swatch pulled from the row's own data (stone
+        // palette / climate water color) rather than an imported icon — same
+        // no-imported-art direction as the stone meshes themselves.
+        var thumbBorder = new GameObject("ThumbnailBorder", typeof(RectTransform));
+        thumbBorder.transform.SetParent(go.transform, false);
+        var tbRect = thumbBorder.GetComponent<RectTransform>();
+        tbRect.anchorMin = tbRect.anchorMax = new Vector2(0f, 0.5f);
+        tbRect.pivot = new Vector2(0f, 0.5f);
+        tbRect.anchoredPosition = new Vector2(30f, 0f);
+        tbRect.sizeDelta = new Vector2(92f, 92f);
+        var tbImg = thumbBorder.AddComponent<Image>();
+        tbImg.sprite = _circle;
+        tbImg.type = Image.Type.Sliced;
+        tbImg.color = new Color(0f, 0f, 0f, 0.25f);
+        tbImg.raycastTarget = false;
+
+        var thumb = new GameObject("Thumbnail", typeof(RectTransform));
+        thumb.transform.SetParent(go.transform, false);
+        var thumbRect = thumb.GetComponent<RectTransform>();
+        thumbRect.anchorMin = thumbRect.anchorMax = new Vector2(0f, 0.5f);
+        thumbRect.pivot = new Vector2(0f, 0.5f);
+        thumbRect.anchoredPosition = new Vector2(34f, 0f);
+        thumbRect.sizeDelta = new Vector2(84f, 84f);
+        var thumbImg = thumb.AddComponent<Image>();
+        thumbImg.sprite = _circle;
+        thumbImg.type = Image.Type.Sliced;
+        thumbImg.color = MUTED;
+        thumbImg.raycastTarget = false;
+
+        var nameLabel = CardTextLeft(go.transform, "Nombre", 38f, WHITE, 26f, 380f, padding: 148f);
         nameLabel.gameObject.name = "Name";
         nameLabel.fontStyle = FontStyles.Bold;
 
-        var descLabel = CardTextLeft(go.transform, "Descripción", 26f, MUTED, -30f, 620f);
+        var descLabel = CardTextLeft(go.transform, "Descripción", 26f, MUTED, -30f, 500f, padding: 148f);
         descLabel.gameObject.name = "Desc";
 
         // The art direction calls for a lock icon; with no icon font shipped yet the
