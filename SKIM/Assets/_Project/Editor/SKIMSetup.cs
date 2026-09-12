@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using TMPro;
 
 [InitializeOnLoad]
 public static class SKIMSetup
@@ -41,6 +42,190 @@ public static class SKIMSetup
         EditorSceneManager.MarkSceneDirty(scene);
         EditorSceneManager.SaveScene(scene);
         Debug.Log("[SKIM] BonusZoneSystemImpl ensured on Systems in Boot.unity");
+    }
+
+    // ─────────────────────────── LIVE SCENE PATCHES ────────────────────
+
+    // CreateGameScene() below only runs once, the first time Game.unity doesn't
+    // exist yet — it's dead code for any later change, same trap AddBonusZoneSystem
+    // above already worked around. This patches the ALREADY-EXISTING HUD and
+    // PostLaunch panel in place instead, per the visual-audit findings: the HUD
+    // canvas never had its scaler configured (ConstantPixelSize by default, while
+    // the menu canvas uses ScaleWithScreenSize — they live in different coordinate
+    // systems), its 3 readouts had inconsistent rect heights (baseline misalignment)
+    // and sat right at the screen edge (under the status bar/cutout on a real
+    // device), and PostLaunch was a 320x360 sharp-cornered rect with bare unlabeled
+    // numbers — 4.4% of the screen, never visually verified until now.
+    [MenuItem("SKIM/Patch HUD And Results Panel")]
+    public static void PatchGameSceneUI()
+    {
+        const string path = "Assets/_Project/Scenes/Game.unity";
+        var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+        var card24 = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Generated/card24.png");
+        var pill35 = AssetDatabase.LoadAssetAtPath<Sprite>("Assets/_Project/Art/Generated/pill35.png");
+
+        PatchHUD();
+        PatchPostLaunch(card24, pill35);
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[SKIM] HUD and PostLaunch patched in Game.unity");
+    }
+
+    static void PatchHUD()
+    {
+        var hud = GameObject.Find("HUD");
+        if (hud == null) { Debug.LogError("[SKIM] HUD not found."); return; }
+
+        var scaler = hud.GetComponent<UnityEngine.UI.CanvasScaler>();
+        scaler.uiScaleMode = UnityEngine.UI.CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1080f, 1920f);
+        scaler.matchWidthOrHeight = 0.5f; // matches MenuCanvas — same coordinate system
+
+        const float margin = 48f; // was 20 — clears the status bar/camera cutout
+
+        SetLabelRect(hud.transform, "ScoreLabel", new Vector2(0.5f, 1f), new Vector2(0f, -margin), new Vector2(300f, 60f));
+        SetLabelRect(hud.transform, "DistanceLabel", new Vector2(0f, 1f), new Vector2(margin, -margin), new Vector2(200f, 60f));
+        SetLabelRect(hud.transform, "MultiplierBadge", new Vector2(1f, 1f), new Vector2(-margin, -margin), new Vector2(160f, 60f));
+
+        // A bare "0" with no unit/icon reads as meaningless on a first launch.
+        var scoreLabelGO = hud.transform.Find("ScoreLabel");
+        if (scoreLabelGO != null)
+        {
+            var caption = new GameObject("ScoreCaption", typeof(RectTransform));
+            caption.transform.SetParent(scoreLabelGO, false);
+            var tmp = caption.AddComponent<TMPro.TextMeshProUGUI>();
+            tmp.text = "PUNTOS";
+            tmp.fontSize = 16f;
+            tmp.color = new Color(0.553f, 0.706f, 0.831f, 0.85f);
+            tmp.alignment = TMPro.TextAlignmentOptions.Center;
+            var rect = tmp.rectTransform;
+            rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 1f);
+            rect.pivot = new Vector2(0.5f, 1f);
+            rect.anchoredPosition = new Vector2(0f, -62f);
+            rect.sizeDelta = new Vector2(300f, 30f);
+        }
+    }
+
+    static void SetLabelRect(Transform parent, string name, Vector2 anchor, Vector2 pos, Vector2 size)
+    {
+        var t = parent.Find(name);
+        if (t == null) return;
+        var rect = (RectTransform)t;
+        rect.anchorMin = rect.anchorMax = anchor;
+        rect.pivot = anchor;
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = size; // same height (60) on all three — was 60/40/40, causing the
+                                // ~14px baseline drop the audit measured between them
+    }
+
+    static void PatchPostLaunch(Sprite card24, Sprite pill35)
+    {
+        var postLaunch = GameObject.Find("PostLaunch");
+        if (postLaunch == null) { Debug.LogError("[SKIM] PostLaunch not found."); return; }
+
+        // Rebuilt at menu scale (900x620, card24, real per-metric captions) instead
+        // of the original 320x360 sharp-cornered rect with bare unlabeled numbers —
+        // named children the controller looks up with transform.Find are preserved.
+        // postLaunch's own Image is the BORDER (full size); a smaller inset "Fill"
+        // child shows the actual card color — same fix as SKIMMenuSetup's Card(),
+        // where Border-as-child-of-Fill meant no border ever actually rendered.
+        var border = postLaunch.GetComponent<UnityEngine.UI.Image>();
+        border.sprite = card24;
+        border.type = UnityEngine.UI.Image.Type.Sliced;
+        border.color = new Color(0.118f, 0.227f, 0.373f, 0.9f); // BORDER
+        var borderRect = border.rectTransform;
+        borderRect.sizeDelta = new Vector2(900f, 620f);
+
+        var fill = new GameObject("Fill", typeof(RectTransform));
+        fill.transform.SetParent(postLaunch.transform, false);
+        var fillRect = (RectTransform)fill.transform;
+        fillRect.anchorMin = Vector2.zero; fillRect.anchorMax = Vector2.one;
+        fillRect.offsetMin = new Vector2(4f, 4f); fillRect.offsetMax = new Vector2(-4f, -4f);
+        var fillImg = fill.AddComponent<UnityEngine.UI.Image>();
+        fillImg.sprite = card24;
+        fillImg.type = UnityEngine.UI.Image.Type.Sliced;
+        fillImg.color = new Color(0.059f, 0.125f, 0.208f, 0.97f); // CARD, opaque enough to read over the ocean
+        fillImg.raycastTarget = false;
+        fill.transform.SetAsFirstSibling(); // drawn right after the parent's own border graphic
+
+        RestyleResultLabel(postLaunch.transform, "DistResult", "DIST_CAPTION", "DISTANCIA", 72f, FontStyles.Bold, Color.white, new Vector2(0f, 190f));
+        RestyleResultLabel(postLaunch.transform, "SkipsResult", "SKIPS_CAPTION", "SALTOS", 40f, FontStyles.Normal,
+            new Color(0.553f, 0.706f, 0.831f), new Vector2(-190f, 40f));
+        RestyleResultLabel(postLaunch.transform, "ScoreResult", "SCORE_CAPTION", "PUNTOS", 40f, FontStyles.Normal,
+            new Color(0.553f, 0.706f, 0.831f), new Vector2(190f, 40f));
+
+        // No separate chip background here: RecordBadge must stay both the
+        // GameObject transform.Find("RecordBadge") looks up AND the direct holder
+        // of the TMP_Text (PostLaunchController does GetComponent<TMP_Text> on the
+        // exact object it finds) — a child background would draw ON TOP of that
+        // text, since uGUI draws parents before their children. Bold + gold text
+        // is the safe improvement without touching PostLaunchController.cs.
+        var recordBadge = postLaunch.transform.Find("RecordBadge")?.GetComponent<TMPro.TextMeshProUGUI>();
+        if (recordBadge != null)
+        {
+            recordBadge.fontSize = 30f;
+            recordBadge.fontStyle = FontStyles.Bold;
+            recordBadge.characterSpacing = 2f;
+            var rrect = recordBadge.rectTransform;
+            rrect.anchoredPosition = new Vector2(0f, -90f);
+            rrect.sizeDelta = new Vector2(600f, 70f);
+        }
+
+        // Retry button — was a 200x50 sharp rectangle tinted with a raw float
+        // literal; now the same pill35 + dark-on-teal treatment as LANZAR.
+        var retryBtnGO = GameObject.Find("RetryButton");
+        if (retryBtnGO != null && retryBtnGO.transform.IsChildOf(postLaunch.transform))
+        {
+            var retryImg = retryBtnGO.GetComponent<UnityEngine.UI.Image>();
+            retryImg.sprite = pill35;
+            retryImg.type = UnityEngine.UI.Image.Type.Sliced;
+            retryImg.color = new Color(0f, 0.769f, 0.8f);
+            var retryRect = retryImg.rectTransform;
+            retryRect.sizeDelta = new Vector2(500f, 110f);
+            retryRect.anchoredPosition = new Vector2(0f, -230f);
+
+            var retryText = retryBtnGO.transform.Find("RetryText")?.GetComponent<TMPro.TextMeshProUGUI>();
+            if (retryText != null)
+            {
+                retryText.fontSize = 34f;
+                retryText.fontStyle = FontStyles.Bold;
+                retryText.color = new Color(0.02f, 0.05f, 0.09f);
+                retryText.characterSpacing = 4f;
+            }
+        }
+    }
+
+    static void RestyleResultLabel(Transform parent, string labelName, string captionName, string captionText,
+                                    float labelSize, FontStyles style, Color labelColor, Vector2 pos)
+    {
+        var labelT = parent.Find(labelName);
+        if (labelT == null) return;
+        var label = labelT.GetComponent<TMPro.TextMeshProUGUI>();
+        label.fontSize = labelSize;
+        label.fontStyle = style;
+        label.color = labelColor;
+        var rect = label.rectTransform;
+        rect.anchoredPosition = pos;
+        rect.sizeDelta = new Vector2(380f, labelSize * 1.3f);
+
+        // A bare "0.0m" / "25" / "8,500" tells the player nothing about which
+        // metric it is — a small MUTED uppercase caption above each fixes that.
+        if (labelT.Find(captionName) != null) return; // idempotent — patch may re-run
+        var captionGO = new GameObject(captionName, typeof(RectTransform));
+        captionGO.transform.SetParent(labelT, false);
+        var caption = captionGO.AddComponent<TMPro.TextMeshProUGUI>();
+        caption.text = captionText;
+        caption.fontSize = 22f;
+        caption.color = new Color(0.553f, 0.706f, 0.831f, 0.8f);
+        caption.alignment = TMPro.TextAlignmentOptions.Center;
+        caption.characterSpacing = 4f;
+        var crect = caption.rectTransform;
+        crect.anchorMin = crect.anchorMax = new Vector2(0.5f, 1f);
+        crect.pivot = new Vector2(0.5f, 1f);
+        crect.anchoredPosition = new Vector2(0f, labelSize * 0.75f);
+        crect.sizeDelta = new Vector2(380f, 30f);
     }
 
     // ─────────────────────────── SPLASH SCENE ──────────────────────────
