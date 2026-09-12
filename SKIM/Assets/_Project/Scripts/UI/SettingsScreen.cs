@@ -11,6 +11,8 @@ public class SettingsScreen : MonoBehaviour
     [SerializeField] Toggle _permanentAssistToggle;
     [SerializeField] Button _deleteDataButton;
     [SerializeField] GameObject _deleteConfirmDialog;
+    [SerializeField] Button _cancelDeleteButton;
+    [SerializeField] Button _confirmDeleteButton;
 
     IAudioSystem _audio;
     IProgressionSystem _progression;
@@ -45,6 +47,8 @@ public class SettingsScreen : MonoBehaviour
             _permanentAssistToggle.onValueChanged.AddListener(v => _progression.PermanentAssist = v);
         }
         _deleteDataButton?.onClick.AddListener(() => _deleteConfirmDialog?.SetActive(true));
+        _cancelDeleteButton?.onClick.AddListener(() => _deleteConfirmDialog?.SetActive(false));
+        _confirmDeleteButton?.onClick.AddListener(ConfirmDeleteData);
     }
 
     void OnDisable()
@@ -55,6 +59,8 @@ public class SettingsScreen : MonoBehaviour
         _reduceEffectsToggle?.onValueChanged.RemoveAllListeners();
         _permanentAssistToggle?.onValueChanged.RemoveAllListeners();
         _deleteDataButton?.onClick.RemoveAllListeners();
+        _cancelDeleteButton?.onClick.RemoveAllListeners();
+        _confirmDeleteButton?.onClick.RemoveAllListeners();
     }
 
     public void ConfirmDeleteData()
