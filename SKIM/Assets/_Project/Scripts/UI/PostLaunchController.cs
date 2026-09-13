@@ -11,9 +11,11 @@ public class PostLaunchController : MonoBehaviour
     TMP_Text _recordBadge;
     Button   _retryButton;
     CanvasGroup _group;
+    ILocalizationSystem _loc;
 
     void Start()
     {
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
         _distanceLabel = FindLabel("DistResult");
         _skipsLabel    = FindLabel("SkipsResult");
         _scoreLabel    = FindLabel("ScoreResult");
@@ -50,12 +52,14 @@ public class PostLaunchController : MonoBehaviour
         return t ? t.GetComponent<TMP_Text>() : null;
     }
 
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
+
     void ShowResult(LaunchResult result)
     {
         Debug.Log($"[PostLaunch] ShowResult — {result.Distance:F1}m | {result.SkipCount} skips | {result.Score} pts");
 
         if (_distanceLabel) _distanceLabel.text = $"{result.Distance:F1}m";
-        if (_skipsLabel)    _skipsLabel.text    = $"{result.SkipCount} skips";
+        if (_skipsLabel)    _skipsLabel.text    = $"{result.SkipCount} {Get("postlaunch.skips_unit")}";
         if (_scoreLabel)    _scoreLabel.text    = result.Score.ToString("N0");
 
         bool showRecord = result.IsNewSessionRecord || result.IsNewAllTimeRecord;
@@ -63,7 +67,7 @@ public class PostLaunchController : MonoBehaviour
         {
             _recordBadge.gameObject.SetActive(showRecord);
             if (showRecord)
-                _recordBadge.text = result.IsNewAllTimeRecord ? "¡NUEVO RÉCORD!" : "¡MEJOR DE SESIÓN!";
+                _recordBadge.text = Get(result.IsNewAllTimeRecord ? "postlaunch.new_record" : "postlaunch.session_best");
         }
 
         transform.localScale = Vector3.zero;

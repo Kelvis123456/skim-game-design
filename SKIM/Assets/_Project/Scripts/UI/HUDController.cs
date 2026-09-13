@@ -9,9 +9,11 @@ public class HUDController : MonoBehaviour
     TMP_Text _multiplierLabel;
     TMP_Text _achievementToast;
     GameObject _tutorialHintPanel;
+    ILocalizationSystem _loc;
 
     void Start()
     {
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
         _scoreLabel      = FindLabel("ScoreLabel");
         _distanceLabel   = FindLabel("DistanceLabel");
         _multiplierLabel = FindLabel("MultiplierBadge");
@@ -38,8 +40,7 @@ public class HUDController : MonoBehaviour
         var textGO = new GameObject("Text");
         textGO.transform.SetParent(bg.transform, false);
         var tmp = textGO.AddComponent<TextMeshProUGUI>();
-        tmp.text = "Arrastrá y soltá en cualquier parte de la pantalla para lanzar la piedra.\n" +
-                   "No hay que perder — cada tirada es un intento. ¡Superá tu récord!";
+        tmp.text = Get("hud.tutorial_hint");
         tmp.fontSize = 30f;
         tmp.alignment = TextAlignmentOptions.Center;
         tmp.color = Color.white;
@@ -138,7 +139,7 @@ public class HUDController : MonoBehaviour
         if (_achievementToast == null) yield break;
 
         _achievementToast.gameObject.SetActive(true);
-        _achievementToast.text = $"¡Logro desbloqueado! {def.Name}";
+        _achievementToast.text = string.Format(Get("hud.achievement_toast"), Get($"ach.{def.Id}.name"));
         _achievementToast.alpha = 1f;
 
         yield return new WaitForSeconds(2.5f);
@@ -152,6 +153,8 @@ public class HUDController : MonoBehaviour
         }
         _achievementToast.gameObject.SetActive(false);
     }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
 
     TMP_Text FindLabel(string childName)
     {

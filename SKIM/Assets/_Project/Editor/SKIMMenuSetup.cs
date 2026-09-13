@@ -35,6 +35,16 @@ public static class SKIMMenuSetup
     // Ñ...) get added to the atlas on demand instead of showing as tofu.
     static TMP_FontAsset GameFont() => _font ??= AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(FONT_PATH);
 
+    // Attaches a LocalizedText to chrome that's baked once here and never
+    // re-set by any controller at runtime — it applies the current language's
+    // string for `key` and re-applies on every language change.
+    static void Localize(TMP_Text tmp, string key)
+    {
+        if (tmp == null || string.IsNullOrEmpty(key)) return;
+        var loc = tmp.gameObject.GetComponent<LocalizedText>() ?? tmp.gameObject.AddComponent<LocalizedText>();
+        loc.Key = key;
+    }
+
     [MenuItem("SKIM/Build Menus")]
     public static void BuildMenus()
     {
@@ -101,23 +111,23 @@ public static class SKIMMenuSetup
         var panel = Panel(parent, "MainPanel");
 
         Title(panel.transform, "SKIM", 128f, new Vector2(0f, -190f));
-        Label(panel.transform, "Una piedra. Un flick. El océano entero.", 30f, MUTED,
-              new Vector2(0f, -390f), new Vector2(900f, 50f));
+        Localize(Label(panel.transform, "Una piedra. Un flick. El océano entero.", 30f, MUTED,
+              new Vector2(0f, -390f), new Vector2(900f, 50f)), "menu.subtitle");
 
         // Climate card
         var climateCard = Card(panel.transform, "ClimateCard", new Vector2(0f, -500f), new Vector2(900f, 190f), _card20);
-        CardTextLeft(climateCard.transform, "CLIMA ACTUAL", 26f, MUTED, 48f, 400f);
+        Localize(CardTextLeft(climateCard.transform, "CLIMA ACTUAL", 26f, MUTED, 48f, 400f), "menu.climate_actual");
         climateLabel = CardTextLeft(climateCard.transform, "CALMA", 52f, TEAL, -22f, 500f);
 
         // Stats card — 40-unit gap from the card above (an 8-unit-module value), same
         // gap used below to the challenge card; was 30 then 50, an inconsistent rhythm.
         var statsCard = Card(panel.transform, "StatsCard", new Vector2(0f, -730f), new Vector2(900f, 190f), _card20);
-        CardTextLeft(statsCard.transform, "TU MEJOR TIRADA", 26f, MUTED, 48f, 400f);
+        Localize(CardTextLeft(statsCard.transform, "TU MEJOR TIRADA", 26f, MUTED, 48f, 400f), "menu.best_throw");
         recordLabel = CardTextLeft(statsCard.transform, "RÉCORD: 0.0m", 46f, WHITE, -22f, 600f);
 
         // Daily challenge card — labels are populated live by DailyChallengeCardUI
         var challengeCard = Card(panel.transform, "ChallengeCard", new Vector2(0f, -990f), new Vector2(900f, 250f), _card20);
-        CardTextLeft(challengeCard.transform, "DESAFÍO DIARIO", 26f, MUTED, 82f, 400f);
+        Localize(CardTextLeft(challengeCard.transform, "DESAFÍO DIARIO", 26f, MUTED, 82f, 400f), "challenge.title");
         var challengeDesc = CardTextLeft(challengeCard.transform, "", 32f, WHITE, 28f, 700f);
         var challengeFill = ProgressBar(challengeCard.transform, new Vector2(0f, -30f), new Vector2(800f, 20f), 0f);
         var challengeProgress = CardTextLeft(challengeCard.transform, "", 26f, MUTED, -78f, 300f);
@@ -156,14 +166,14 @@ public static class SKIMMenuSetup
         // Fixed pixel widths (±432/±216 for 190-wide chips = 1054 units) used to
         // overflow the ~966-unit-wide canvas on a 20:9 phone, clipping ~23% off each
         // outer tab. A layout group sizes chips to the actual available width instead.
-        tabStones       = TabButton(tabs.transform, "TabStones", "Colección");
-        tabClimates     = TabButton(tabs.transform, "TabClimates", "Clima");
-        tabChallenge    = TabButton(tabs.transform, "TabChallenge", "Desafíos");
-        tabAchievements = TabButton(tabs.transform, "TabAchievements", "Logros");
-        tabSettings     = TabButton(tabs.transform, "TabSettings", "Config");
+        tabStones       = TabButton(tabs.transform, "TabStones", "Colección", "tab.collection");
+        tabClimates     = TabButton(tabs.transform, "TabClimates", "Clima", "tab.climate");
+        tabChallenge    = TabButton(tabs.transform, "TabChallenge", "Desafíos", "tab.challenges");
+        tabAchievements = TabButton(tabs.transform, "TabAchievements", "Logros", "tab.achievements");
+        tabSettings     = TabButton(tabs.transform, "TabSettings", "Config", "tab.settings");
 
         // Primary CTA — teal pill, 70px tall at 1x (140 at this 2x reference).
-        launch = PillButton(panel.transform, "LaunchButton", "LANZAR", Vector2.zero, new Vector2(760f, 140f));
+        launch = PillButton(panel.transform, "LaunchButton", "LANZAR", Vector2.zero, new Vector2(760f, 140f), "menu.launch");
         var launchRect = launch.GetComponent<RectTransform>();
         launchRect.anchorMin = launchRect.anchorMax = new Vector2(0.5f, 0f);
         launchRect.pivot = new Vector2(0.5f, 0f);
@@ -177,9 +187,9 @@ public static class SKIMMenuSetup
     static GameObject BuildStonePanel(Transform parent, Transform templates)
     {
         var panel = Panel(parent, "StonePanel");
-        Title(panel.transform, "COLECCIÓN", 64f, new Vector2(0f, -160f));
-        Label(panel.transform, "Cada piedra cambia el rebote y la sensibilidad al spin", 28f, MUTED,
-              new Vector2(0f, -250f), new Vector2(900f, 40f));
+        Localize(Title(panel.transform, "COLECCIÓN", 64f, new Vector2(0f, -160f)), "collection.title");
+        Localize(Label(panel.transform, "Cada piedra cambia el rebote y la sensibilidad al spin", 28f, MUTED,
+              new Vector2(0f, -250f), new Vector2(900f, 40f)), "collection.subtitle");
 
         var container = Container(panel.transform, new Vector2(0f, -330f), new Vector2(920f, 900f), 24f);
         var template = RowTemplate(templates, "StoneRow", withBadge: true);
@@ -195,7 +205,7 @@ public static class SKIMMenuSetup
     static GameObject BuildClimatePanel(Transform parent, Transform templates)
     {
         var panel = Panel(parent, "ClimatePanel");
-        Title(panel.transform, "CLIMAS", 64f, new Vector2(0f, -160f));
+        Localize(Title(panel.transform, "CLIMAS", 64f, new Vector2(0f, -160f)), "climate.title");
         var count = Label(panel.transform, "2/5 niveles", 28f, TEAL, new Vector2(0f, -250f), new Vector2(400f, 40f));
 
         var container = Container(panel.transform, new Vector2(0f, -330f), new Vector2(920f, 1000f), 24f);
@@ -215,27 +225,38 @@ public static class SKIMMenuSetup
     static GameObject BuildSettingsPanel(Transform parent)
     {
         var panel = Panel(parent, "SettingsPanel");
-        Title(panel.transform, "CONFIGURACIÓN", 58f, new Vector2(0f, -160f));
+        Localize(Title(panel.transform, "CONFIGURACIÓN", 58f, new Vector2(0f, -160f)), "settings.title");
 
         // Left edge of the label's own rect needs to land at the card's left
         // edge (card is 900 wide, centered on x=0, so its edge is at -450) —
         // these were positioned assuming a wider screen than this aspect ratio
         // actually renders at, and were clipping off the left of the display.
-        Label(panel.transform, "AUDIO", 26f, MUTED, new Vector2(-300f, -280f), new Vector2(300f, 40f),
-              TextAlignmentOptions.Left);
+        Localize(Label(panel.transform, "AUDIO", 26f, MUTED, new Vector2(-300f, -280f), new Vector2(300f, 40f),
+              TextAlignmentOptions.Left), "settings.audio");
         var audioCard = Card(panel.transform, "AudioCard", new Vector2(0f, -330f), new Vector2(900f, 260f), _card20);
-        var music = SliderRow(audioCard.transform, "Música", new Vector2(0f, 60f), 0.7f);
-        var sfx   = SliderRow(audioCard.transform, "Efectos", new Vector2(0f, -60f), 1f);
+        var music = SliderRow(audioCard.transform, "Música", new Vector2(0f, 60f), 0.7f, "settings.music");
+        var sfx   = SliderRow(audioCard.transform, "Efectos", new Vector2(0f, -60f), 1f, "settings.effects");
 
-        Label(panel.transform, "ACCESIBILIDAD", 26f, MUTED, new Vector2(-250f, -630f), new Vector2(400f, 40f),
-              TextAlignmentOptions.Left);
+        Localize(Label(panel.transform, "ACCESIBILIDAD", 26f, MUTED, new Vector2(-250f, -630f), new Vector2(400f, 40f),
+              TextAlignmentOptions.Left), "settings.accessibility");
         var a11yCard = Card(panel.transform, "A11yCard", new Vector2(0f, -690f), new Vector2(900f, 280f), _card20);
-        var vibration = ToggleRow(a11yCard.transform, "Vibración", new Vector2(0f, 80f), true);
-        var reduceFx  = ToggleRow(a11yCard.transform, "Reducir efectos", new Vector2(0f, 0f), false);
-        var permAssist = ToggleRow(a11yCard.transform, "Asistir siempre", new Vector2(0f, -80f), false);
+        var vibration = ToggleRow(a11yCard.transform, "Vibración", new Vector2(0f, 80f), true, "settings.vibration");
+        var reduceFx  = ToggleRow(a11yCard.transform, "Reducir efectos", new Vector2(0f, 0f), false, "settings.reduce_effects");
+        var permAssist = ToggleRow(a11yCard.transform, "Asistir siempre", new Vector2(0f, -80f), false, "settings.always_assist");
+
+        // Language — two pill buttons, active one tinted teal by SettingsScreen
+        // based on ILocalizationSystem.Language. Card()/Label() anchor from
+        // their TOP edge (pivot 1, not center) — a11yCard's bottom edge is
+        // therefore -690-280=-970, not -830 as a center-pivot read would
+        // suggest, which is what put this section on top of "Asistir siempre"
+        // the first time.
+        Localize(Label(panel.transform, "IDIOMA", 26f, MUTED, new Vector2(-300f, -1010f), new Vector2(300f, 40f),
+              TextAlignmentOptions.Left), "settings.language");
+        var langEs = PillButton(panel.transform, "LangEsButton", "Español", new Vector2(-120f, -1060f), new Vector2(220f, 70f), "settings.lang_es");
+        var langEn = PillButton(panel.transform, "LangEnButton", "English", new Vector2(120f, -1060f), new Vector2(220f, 70f), "settings.lang_en");
 
         var deleteBtn = TextButton(panel.transform, "DeleteData", "Eliminar datos", Hex("E74C3C"),
-                                   new Vector2(0f, -1010f), new Vector2(500f, 80f));
+                                   new Vector2(0f, -1170f), new Vector2(500f, 80f), "settings.delete_data");
 
         // Was never built at all — "Eliminar datos" opened a dialog reference
         // that was always null, so the button silently did nothing.
@@ -252,12 +273,13 @@ public static class SKIMMenuSetup
         dcRect.pivot = new Vector2(0.5f, 0.5f);
         dcRect.anchoredPosition = Vector2.zero;
 
-        Label(dialogCard.transform, "¿Eliminar todos tus datos?", 32f, WHITE, new Vector2(0f, 140f), new Vector2(680f, 60f));
-        Label(dialogCard.transform, "Perderás tu progreso, récords y piedras/climas desbloqueados. Esta acción no se puede deshacer.",
-              24f, MUTED, new Vector2(0f, 40f), new Vector2(660f, 120f));
+        Localize(Label(dialogCard.transform, "¿Eliminar todos tus datos?", 32f, WHITE, new Vector2(0f, 140f), new Vector2(680f, 60f)),
+              "settings.delete_title");
+        Localize(Label(dialogCard.transform, "Perderás tu progreso, récords y piedras/climas desbloqueados. Esta acción no se puede deshacer.",
+              24f, MUTED, new Vector2(0f, 40f), new Vector2(660f, 120f)), "settings.delete_body");
 
-        var cancelBtn = PillButton(dialogCard.transform, "CancelButton", "CANCELAR", new Vector2(-190f, -160f), new Vector2(340f, 90f));
-        var confirmBtn = PillButton(dialogCard.transform, "ConfirmDeleteButton", "ELIMINAR", new Vector2(190f, -160f), new Vector2(340f, 90f));
+        var cancelBtn = PillButton(dialogCard.transform, "CancelButton", "CANCELAR", new Vector2(-190f, -160f), new Vector2(340f, 90f), "settings.cancel");
+        var confirmBtn = PillButton(dialogCard.transform, "ConfirmDeleteButton", "ELIMINAR", new Vector2(190f, -160f), new Vector2(340f, 90f), "settings.confirm_delete");
         confirmBtn.GetComponent<Image>().color = Hex("E74C3C"); // destructive action, not the default teal CTA color
 
         var screen = panel.AddComponent<SettingsScreen>();
@@ -270,6 +292,8 @@ public static class SKIMMenuSetup
         Wire(screen, "_deleteConfirmDialog", dialog);
         Wire(screen, "_cancelDeleteButton", cancelBtn);
         Wire(screen, "_confirmDeleteButton", confirmBtn);
+        Wire(screen, "_langEsButton", langEs);
+        Wire(screen, "_langEnButton", langEn);
 
         BackButton(panel.transform);
         return panel;
@@ -278,7 +302,7 @@ public static class SKIMMenuSetup
     static GameObject BuildChallengePanel(Transform parent)
     {
         var panel = Panel(parent, "ChallengePanel");
-        Title(panel.transform, "DESAFÍO DIARIO", 58f, new Vector2(0f, -160f));
+        Localize(Title(panel.transform, "DESAFÍO DIARIO", 58f, new Vector2(0f, -160f)), "challenge.title");
 
         var card = Card(panel.transform, "ChallengeMain", new Vector2(0f, -340f), new Vector2(900f, 340f), _card24);
         var desc = CardTextLeft(card.transform, "", 34f, WHITE, 62f, 700f);
@@ -301,9 +325,9 @@ public static class SKIMMenuSetup
     static GameObject BuildAchievementsPanel(Transform parent, Transform templates)
     {
         var panel = Panel(parent, "AchievementsPanel");
-        Title(panel.transform, "LOGROS", 64f, new Vector2(0f, -160f));
-        Label(panel.transform, "Se desbloquean solos mientras juegas", 28f, MUTED,
-              new Vector2(0f, -250f), new Vector2(900f, 40f));
+        Localize(Title(panel.transform, "LOGROS", 64f, new Vector2(0f, -160f)), "achievements.title");
+        Localize(Label(panel.transform, "Se desbloquean solos mientras juegas", 28f, MUTED,
+              new Vector2(0f, -250f), new Vector2(900f, 40f)), "achievements.subtitle");
 
         var container = Container(panel.transform, new Vector2(0f, -330f), new Vector2(920f, 1200f), 24f);
         var template = RowTemplate(templates, "AchievementRow", withBadge: true);
@@ -415,7 +439,7 @@ public static class SKIMMenuSetup
         return tmp;
     }
 
-    static Button PillButton(Transform parent, string name, string text, Vector2 pos, Vector2 size)
+    static Button PillButton(Transform parent, string name, string text, Vector2 pos, Vector2 size, string locKey = null)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -442,13 +466,14 @@ public static class SKIMMenuSetup
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.anchoredPosition = Vector2.zero;
+        Localize(tmp, locKey);
 
         return btn;
     }
 
     // A HorizontalLayoutGroup child — width comes from the parent layout, not a fixed
     // number, so 5 tabs always fit the real screen width instead of a hardcoded 190.
-    static Button TabButton(Transform parent, string name, string text)
+    static Button TabButton(Transform parent, string name, string text, string locKey = null)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -474,11 +499,12 @@ public static class SKIMMenuSetup
         trect.pivot = new Vector2(0.5f, 0.5f);
         trect.offsetMin = new Vector2(6f, 0f);
         trect.offsetMax = new Vector2(-6f, 0f);
+        Localize(tmp, locKey);
 
         return btn;
     }
 
-    static Button TextButton(Transform parent, string name, string text, Color color, Vector2 pos, Vector2 size)
+    static Button TextButton(Transform parent, string name, string text, Color color, Vector2 pos, Vector2 size, string locKey = null)
     {
         var go = new GameObject(name, typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -498,13 +524,14 @@ public static class SKIMMenuSetup
         tmp.rectTransform.anchorMin = tmp.rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.pivot = new Vector2(0.5f, 0.5f);
         tmp.rectTransform.anchoredPosition = Vector2.zero;
+        Localize(tmp, locKey);
 
         return btn;
     }
 
     static void BackButton(Transform parent)
     {
-        var btn = TextButton(parent, "BackButton", "‹ Volver", MUTED, new Vector2(-380f, -70f), new Vector2(260f, 80f));
+        var btn = TextButton(parent, "BackButton", "‹ Volver", MUTED, new Vector2(-380f, -70f), new Vector2(260f, 80f), "common.back");
         btn.gameObject.AddComponent<SkimBackButton>();
     }
 
@@ -590,6 +617,7 @@ public static class SKIMMenuSetup
         // locked state is spelled out instead of rendering a tofu box.
         var lockLabel = CardTextRight(go.transform, "BLOQUEADA", 22f, MUTED, 0f, 260f);
         lockLabel.gameObject.name = "Lock";
+        Localize(lockLabel, "row.locked"); // same word regardless of which screen's row this is
 
         if (withBadge)
         {
@@ -643,9 +671,9 @@ public static class SKIMMenuSetup
         return frect;
     }
 
-    static Slider SliderRow(Transform parent, string label, Vector2 pos, float value)
+    static Slider SliderRow(Transform parent, string label, Vector2 pos, float value, string locKey = null)
     {
-        CardTextLeft(parent, label, 30f, WHITE, pos.y, 300f);
+        Localize(CardTextLeft(parent, label, 30f, WHITE, pos.y, 300f), locKey);
 
         var go = new GameObject("Slider", typeof(RectTransform));
         go.transform.SetParent(parent, false);
@@ -699,9 +727,9 @@ public static class SKIMMenuSetup
         return slider;
     }
 
-    static Toggle ToggleRow(Transform parent, string label, Vector2 pos, bool isOn)
+    static Toggle ToggleRow(Transform parent, string label, Vector2 pos, bool isOn, string locKey = null)
     {
-        CardTextLeft(parent, label, 30f, WHITE, pos.y, 300f);
+        Localize(CardTextLeft(parent, label, 30f, WHITE, pos.y, 300f), locKey);
 
         var go = new GameObject("Toggle", typeof(RectTransform));
         go.transform.SetParent(parent, false);

@@ -140,6 +140,7 @@ GameObject:
   - component: {fileID: 884763309}
   - component: {fileID: 884763308}
   - component: {fileID: 884763320}
+  - component: {fileID: 884763321}
   m_Layer: 0
   m_Name: Systems
   m_TagString: Untagged
@@ -346,6 +347,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d41ab810be6fbf04799065fd16925025, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BonusZoneSystemImpl
+--- !u!114 &884763321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 884763307}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4a22006049dadda4fb0737f533127f94, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LocalizationSystemImpl
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

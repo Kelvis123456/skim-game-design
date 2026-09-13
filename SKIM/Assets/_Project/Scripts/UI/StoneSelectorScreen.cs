@@ -8,12 +8,22 @@ public class StoneSelectorScreen : MonoBehaviour
     [SerializeField] GameObject _rowPrefab;
 
     IProgressionSystem _prog;
+    ILocalizationSystem _loc;
 
     void OnEnable()
     {
         _prog = ServiceLocator.Get<IProgressionSystem>();
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
+        if (_loc != null) _loc.OnLanguageChanged += BuildRows;
         BuildRows();
     }
+
+    void OnDisable()
+    {
+        if (_loc != null) _loc.OnLanguageChanged -= BuildRows;
+    }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
 
     void BuildRows()
     {
@@ -26,7 +36,7 @@ public class StoneSelectorScreen : MonoBehaviour
             bool equipped = _prog.SelectedStone == stone;
 
             row.transform.Find("Name")?.GetComponent<TMP_Text>()
-               ?.SetText(stone.StoneName);
+               ?.SetText(Get("stone.name." + stone.StoneName));
 
             var thumb = row.transform.Find("Thumbnail")?.GetComponent<Image>();
             if (thumb)
@@ -37,14 +47,19 @@ public class StoneSelectorScreen : MonoBehaviour
 
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
             if (desc) desc.text = unlocked
-                ? $"Rebote: {stone.ReboundCoefficient:F2}  Spin: {stone.SpinSensitivity:F2}  ·  Récord: {_prog.BestDistanceForStone(stone.StoneName):0.0}m"
-                : $"Desbloquea a {stone.UnlockDistanceMeters:N0}m acumulados";
+                ? string.Format(Get("stone.desc_unlocked"), stone.ReboundCoefficient.ToString("F2"),
+                    stone.SpinSensitivity.ToString("F2"), _prog.BestDistanceForStone(stone.StoneName).ToString("0.0"))
+                : string.Format(Get("stone.desc_locked"), stone.UnlockDistanceMeters.ToString("N0") + "m");
 
             var lockIcon = row.transform.Find("Lock");
             if (lockIcon) lockIcon.gameObject.SetActive(!unlocked);
 
             var badge = row.transform.Find("EquippedBadge");
-            if (badge) badge.gameObject.SetActive(equipped);
+            if (badge)
+            {
+                badge.gameObject.SetActive(equipped);
+                badge.GetComponent<TMP_Text>()?.SetText(Get("row.equipped"));
+            }
 
             if (unlocked)
             {

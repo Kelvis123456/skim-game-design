@@ -12,14 +12,23 @@ public class DailyChallengeCardUI : MonoBehaviour
     [SerializeField] RectTransform _progressFill;
 
     IProgressionSystem _progression;
+    ILocalizationSystem _loc;
 
     void OnEnable()
     {
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
+        if (_loc != null) _loc.OnLanguageChanged += Refresh;
         Refresh();
         InvokeRepeating(nameof(Refresh), 1f, 1f);
     }
 
-    void OnDisable() => CancelInvoke(nameof(Refresh));
+    void OnDisable()
+    {
+        CancelInvoke(nameof(Refresh));
+        if (_loc != null) _loc.OnLanguageChanged -= Refresh;
+    }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
 
     void Refresh()
     {
@@ -30,9 +39,9 @@ public class DailyChallengeCardUI : MonoBehaviour
         int pct = c.Target > 0f ? Mathf.RoundToInt(Mathf.Clamp01(c.Progress / c.Target) * 100f) : 0;
 
         if (_descriptionLabel) _descriptionLabel.text = c.Description;
-        if (_rewardLabel) _rewardLabel.text = c.Completed ? "¡Completado!" : $"+{c.RewardConchas} conchas";
+        if (_rewardLabel) _rewardLabel.text = c.Completed ? Get("challenge.completed") : string.Format(Get("challenge.reward"), c.RewardConchas);
         if (_progressLabel) _progressLabel.text = $"{c.Progress:0}{unit} / {c.Target:0}{unit}  ·  {pct}%";
-        if (_resetLabel) _resetLabel.text = $"Renueva en {c.TimeUntilReset.Hours}h {c.TimeUntilReset.Minutes}m";
+        if (_resetLabel) _resetLabel.text = string.Format(Get("challenge.reset"), c.TimeUntilReset.Hours, c.TimeUntilReset.Minutes);
 
         if (_progressFill)
         {

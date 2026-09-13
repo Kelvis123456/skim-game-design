@@ -29,11 +29,14 @@ public class MainMenuController : MonoBehaviour
 
     IProgressionSystem _prog;
     IOceanSystem _ocean;
+    ILocalizationSystem _loc;
 
     void Start()
     {
         _prog  = ServiceLocator.Get<IProgressionSystem>();
         _ocean = ServiceLocator.Get<IOceanSystem>();
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
+        if (_loc != null) _loc.OnLanguageChanged += RefreshStats;
 
         // The menu owns the screen until the player taps LANZAR, so a stray drag
         // behind it can't fire a launch.
@@ -55,9 +58,16 @@ public class MainMenuController : MonoBehaviour
     void RefreshStats()
     {
         if (_recordLabel)
-            _recordLabel.text = $"RÉCORD: {_prog.AllTimeRecord:F1}m";
+            _recordLabel.text = string.Format(Get("menu.record_format"), _prog.AllTimeRecord.ToString("F1"));
         if (_climateLabel && _ocean?.CurrentClimate != null)
-            _climateLabel.text = _ocean.CurrentClimate.ClimateName.ToUpper();
+            _climateLabel.text = Get("climate.name." + _ocean.CurrentClimate.ClimateName).ToUpper();
+    }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
+
+    void OnDestroy()
+    {
+        if (_loc != null) _loc.OnLanguageChanged -= RefreshStats;
     }
 
     public void ShowMainPanel() => ShowPanel(_mainPanel);

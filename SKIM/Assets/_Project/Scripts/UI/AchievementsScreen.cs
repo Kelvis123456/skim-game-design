@@ -8,12 +8,22 @@ public class AchievementsScreen : MonoBehaviour
     [SerializeField] GameObject _rowPrefab;
 
     IProgressionSystem _prog;
+    ILocalizationSystem _loc;
 
     void OnEnable()
     {
         _prog = ServiceLocator.Get<IProgressionSystem>();
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
+        if (_loc != null) _loc.OnLanguageChanged += BuildRows;
         BuildRows();
     }
+
+    void OnDisable()
+    {
+        if (_loc != null) _loc.OnLanguageChanged -= BuildRows;
+    }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
 
     void BuildRows()
     {
@@ -24,7 +34,7 @@ public class AchievementsScreen : MonoBehaviour
             var row = Instantiate(_rowPrefab, _rowContainer);
             bool unlocked = _prog.IsAchievementUnlocked(def.Id);
 
-            row.transform.Find("Name")?.GetComponent<TMP_Text>()?.SetText(def.Name);
+            row.transform.Find("Name")?.GetComponent<TMP_Text>()?.SetText(Get($"ach.{def.Id}.name"));
 
             var thumb = row.transform.Find("Thumbnail")?.GetComponent<Image>();
             if (thumb)
@@ -34,14 +44,14 @@ public class AchievementsScreen : MonoBehaviour
             }
 
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
-            if (desc) desc.text = def.Description;
+            if (desc) desc.text = Get($"ach.{def.Id}.desc");
 
             var badge = row.transform.Find("EquippedBadge");
             if (badge)
             {
                 badge.gameObject.SetActive(unlocked);
                 var badgeText = badge.GetComponent<TMP_Text>();
-                if (badgeText) badgeText.text = "DESBLOQUEADO";
+                if (badgeText) badgeText.text = Get("achievements.unlocked");
             }
 
             var lockIcon = row.transform.Find("Lock");

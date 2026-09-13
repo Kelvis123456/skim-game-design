@@ -19,6 +19,7 @@ public class GameBootstrapper : MonoBehaviour
         var vfx         = GetComponent<VFXSystemImpl>();
         var economy     = GetComponent<EconomySystemImpl>();
         var bonusZones  = GetComponent<BonusZoneSystemImpl>();
+        var localization = GetComponent<LocalizationSystemImpl>();
 
         // Validate — log clearly if any component is missing
         bool ok = Validate("ProgressionSystem", progression)
@@ -29,7 +30,8 @@ public class GameBootstrapper : MonoBehaviour
                && Validate("ScoringSystem",     scoring)
                && Validate("VFXSystem",         vfx)
                && Validate("EconomySystem",     economy)
-               && Validate("BonusZoneSystem",   bonusZones);
+               && Validate("BonusZoneSystem",   bonusZones)
+               && Validate("LocalizationSystem", localization);
 
         if (!ok) { Debug.LogError("[Boot] Missing components — aborting."); return; }
 
@@ -47,6 +49,7 @@ public class GameBootstrapper : MonoBehaviour
         ServiceLocator.Register<IVFXSystem>(vfx);
         ServiceLocator.Register<IEconomySystem>(economy);
         ServiceLocator.Register<IBonusZoneSystem>(bonusZones);
+        ServiceLocator.Register<ILocalizationSystem>(localization);
 
         stone.SetOceanReference(ocean);
         bonusZones.SetOceanReference(ocean);
