@@ -217,13 +217,17 @@ public static class SKIMMenuSetup
         var panel = Panel(parent, "SettingsPanel");
         Title(panel.transform, "CONFIGURACIÓN", 58f, new Vector2(0f, -160f));
 
-        Label(panel.transform, "AUDIO", 26f, MUTED, new Vector2(-370f, -280f), new Vector2(300f, 40f),
+        // Left edge of the label's own rect needs to land at the card's left
+        // edge (card is 900 wide, centered on x=0, so its edge is at -450) —
+        // these were positioned assuming a wider screen than this aspect ratio
+        // actually renders at, and were clipping off the left of the display.
+        Label(panel.transform, "AUDIO", 26f, MUTED, new Vector2(-300f, -280f), new Vector2(300f, 40f),
               TextAlignmentOptions.Left);
         var audioCard = Card(panel.transform, "AudioCard", new Vector2(0f, -330f), new Vector2(900f, 260f), _card20);
         var music = SliderRow(audioCard.transform, "Música", new Vector2(0f, 60f), 0.7f);
         var sfx   = SliderRow(audioCard.transform, "Efectos", new Vector2(0f, -60f), 1f);
 
-        Label(panel.transform, "ACCESIBILIDAD", 26f, MUTED, new Vector2(-330f, -630f), new Vector2(400f, 40f),
+        Label(panel.transform, "ACCESIBILIDAD", 26f, MUTED, new Vector2(-250f, -630f), new Vector2(400f, 40f),
               TextAlignmentOptions.Left);
         var a11yCard = Card(panel.transform, "A11yCard", new Vector2(0f, -690f), new Vector2(900f, 280f), _card20);
         var vibration = ToggleRow(a11yCard.transform, "Vibración", new Vector2(0f, 80f), true);
@@ -233,12 +237,39 @@ public static class SKIMMenuSetup
         var deleteBtn = TextButton(panel.transform, "DeleteData", "Eliminar datos", Hex("E74C3C"),
                                    new Vector2(0f, -1010f), new Vector2(500f, 80f));
 
+        // Was never built at all — "Eliminar datos" opened a dialog reference
+        // that was always null, so the button silently did nothing.
+        var dialog = new GameObject("DeleteConfirmDialog", typeof(RectTransform));
+        dialog.transform.SetParent(panel.transform, false);
+        Stretch(dialog.GetComponent<RectTransform>());
+        var backdrop = dialog.AddComponent<Image>();
+        backdrop.color = new Color(0f, 0f, 0f, 0.6f);
+        dialog.SetActive(false);
+
+        var dialogCard = Card(dialog.transform, "DialogCard", Vector2.zero, new Vector2(760f, 420f), _card24);
+        var dcRect = dialogCard.GetComponent<RectTransform>();
+        dcRect.anchorMin = dcRect.anchorMax = new Vector2(0.5f, 0.5f);
+        dcRect.pivot = new Vector2(0.5f, 0.5f);
+        dcRect.anchoredPosition = Vector2.zero;
+
+        Label(dialogCard.transform, "¿Eliminar todos tus datos?", 32f, WHITE, new Vector2(0f, 140f), new Vector2(680f, 60f));
+        Label(dialogCard.transform, "Perderás tu progreso, récords y piedras/climas desbloqueados. Esta acción no se puede deshacer.",
+              24f, MUTED, new Vector2(0f, 40f), new Vector2(660f, 120f));
+
+        var cancelBtn = PillButton(dialogCard.transform, "CancelButton", "CANCELAR", new Vector2(-190f, -160f), new Vector2(340f, 90f));
+        var confirmBtn = PillButton(dialogCard.transform, "ConfirmDeleteButton", "ELIMINAR", new Vector2(190f, -160f), new Vector2(340f, 90f));
+        confirmBtn.GetComponent<Image>().color = Hex("E74C3C"); // destructive action, not the default teal CTA color
+
         var screen = panel.AddComponent<SettingsScreen>();
         Wire(screen, "_musicSlider", music);
         Wire(screen, "_sfxSlider", sfx);
         Wire(screen, "_vibrationToggle", vibration);
         Wire(screen, "_reduceEffectsToggle", reduceFx);
+        Wire(screen, "_permanentAssistToggle", permAssist); // was never wired — toggle existed but did nothing
         Wire(screen, "_deleteDataButton", deleteBtn);
+        Wire(screen, "_deleteConfirmDialog", dialog);
+        Wire(screen, "_cancelDeleteButton", cancelBtn);
+        Wire(screen, "_confirmDeleteButton", confirmBtn);
 
         BackButton(panel.transform);
         return panel;
