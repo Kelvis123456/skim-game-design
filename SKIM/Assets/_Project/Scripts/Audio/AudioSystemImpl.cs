@@ -11,6 +11,7 @@ public class AudioSystemImpl : MonoBehaviour, IAudioSystem
     AudioClip[] _noteClips;
     AudioClip _splashClip;
     AudioClip _chordClip;
+    AudioClip _musicClip;
 
     static readonly float[] NOTE_FREQS = { 261.6f, 293.7f, 329.6f, 392f, 440f, 523.3f };
     const int SAMPLE_RATE = 44100;
@@ -29,10 +30,13 @@ public class AudioSystemImpl : MonoBehaviour, IAudioSystem
 
     void Awake()
     {
-        _musicSource    = CreateSource("Music",    0.7f, false);
+        _musicSource    = CreateSource("Music",    0.7f, true);
         _sfxSource      = CreateSource("SFX",      1.0f, false);
         _ambienceSource = CreateSource("Ambience", 0.4f, true);
         GenerateClips();
+
+        _musicSource.clip = _musicClip;
+        _musicSource.Play();
     }
 
     AudioSource CreateSource(string label, float vol, bool loop)
@@ -54,6 +58,7 @@ public class AudioSystemImpl : MonoBehaviour, IAudioSystem
 
         _splashClip = SynthSplash();
         _chordClip = SynthChord();
+        _musicClip = SynthAmbientPad(16f);
     }
 
     public void PlaySkipNote(int skipNumber)
@@ -135,6 +140,57 @@ public class AudioSystemImpl : MonoBehaviour, IAudioSystem
         }
         var clip = AudioClip.Create("chord", samples, 1, SAMPLE_RATE, false);
         clip.SetData(data, 0);
+        return clip;
+    }
+
+    // A slow, breathing pad — spread low triad plus a soft high shimmer, each
+    // voice modulated by its own slow LFO so the loop never feels static.
+    // "Música" was previously wired to an AudioSource that never had a clip
+    // or a Play() call, so the slider adjusted the volume of silence.
+    static AudioClip SynthAmbientPad(float duration)
+    {
+        const float XFADE = 2f;
+        int loopSamples = Mathf.RoundToInt(SAMPLE_RATE * duration);
+        int xfadeSamples = Mathf.RoundToInt(SAMPLE_RATE * XFADE);
+        int rawSamples = loopSamples + xfadeSamples;
+
+        var voices = new (float freq, float amp, float lfoHz, float lfoDepth, float phase)[]
+        {
+            (130.81f, 0.22f,  1f / 9f,  0.35f, 0f),    // C3
+            (196.00f, 0.16f,  1f / 11f, 0.30f, 1.3f),  // G3
+            (329.63f, 0.10f,  1f / 7f,  0.40f, 2.6f),  // E4
+            (659.25f, 0.045f, 1f / 5f,  0.5f,  4.1f),  // E5 shimmer
+        };
+
+        var raw = new float[rawSamples];
+        foreach (var v in voices)
+            for (int i = 0; i < rawSamples; i++)
+            {
+                float t = (float)i / SAMPLE_RATE;
+                float lfo = 1f - v.lfoDepth * 0.5f * (1f + Mathf.Sin(2f * Mathf.PI * v.lfoHz * t + v.phase));
+                raw[i] += Mathf.Sin(2f * Mathf.PI * v.freq * t) * v.amp * lfo;
+            }
+
+        // A hard cut at the loop point would click, since nothing forces the
+        // waveform back to the same value/slope it started at. Instead blend
+        // the samples that would naturally continue past the loop (raw keeps
+        // generating for XFADE seconds past loopSamples for exactly this)
+        // against the original head, and put that blended segment at the
+        // front. Every splice this creates lands between two samples that
+        // are adjacent in the same continuously-generated `raw` array, so
+        // there's no discontinuity at either seam.
+        var result = new float[loopSamples];
+        for (int i = 0; i < xfadeSamples; i++)
+        {
+            float t = (float)i / xfadeSamples;
+            float fadeIn  = Mathf.Sin(t * Mathf.PI * 0.5f);
+            float fadeOut = Mathf.Cos(t * Mathf.PI * 0.5f);
+            result[i] = raw[loopSamples + i] * fadeOut + raw[i] * fadeIn;
+        }
+        for (int i = xfadeSamples; i < loopSamples; i++) result[i] = raw[i];
+
+        var clip = AudioClip.Create("ambient_pad", loopSamples, 1, SAMPLE_RATE, false);
+        clip.SetData(result, 0);
         return clip;
     }
 
