@@ -9,12 +9,22 @@ public class ClimateSelectorScreen : MonoBehaviour
     [SerializeField] TMP_Text _unlockedCountLabel;
 
     IProgressionSystem _prog;
+    ILocalizationSystem _loc;
 
     void OnEnable()
     {
         _prog = ServiceLocator.Get<IProgressionSystem>();
+        ServiceLocator.TryGet<ILocalizationSystem>(out _loc);
+        if (_loc != null) _loc.OnLanguageChanged += BuildRows;
         BuildRows();
     }
+
+    void OnDisable()
+    {
+        if (_loc != null) _loc.OnLanguageChanged -= BuildRows;
+    }
+
+    string Get(string key) => _loc != null ? _loc.Get(key) : key;
 
     void BuildRows()
     {
@@ -29,7 +39,7 @@ public class ClimateSelectorScreen : MonoBehaviour
 
             var row = Instantiate(_rowPrefab, _rowContainer);
 
-            row.transform.Find("Name")?.GetComponent<TMP_Text>()?.SetText(climate.ClimateName);
+            row.transform.Find("Name")?.GetComponent<TMP_Text>()?.SetText(Get("climate.name." + climate.ClimateName));
 
             var thumb = row.transform.Find("Thumbnail")?.GetComponent<Image>();
             if (thumb)
@@ -40,8 +50,9 @@ public class ClimateSelectorScreen : MonoBehaviour
 
             var desc = row.transform.Find("Desc")?.GetComponent<TMP_Text>();
             if (desc) desc.text = isUnlocked
-                ? $"{climate.Harmonics.Length} olas  ×{climate.ClimateMultiplier:F1} score  ·  Récord: {_prog.BestDistanceForClimate(climate.ClimateName):0.0}m"
-                : $"Desbloquea a {climate.UnlockDistanceMeters:N0}m";
+                ? string.Format(Get("climate.desc_unlocked"), climate.Harmonics.Length,
+                    climate.ClimateMultiplier.ToString("F1"), _prog.BestDistanceForClimate(climate.ClimateName).ToString("0.0"))
+                : string.Format(Get("climate.desc_locked"), climate.UnlockDistanceMeters.ToString("N0") + "m");
 
             var lockIcon = row.transform.Find("Lock");
             if (lockIcon) lockIcon.gameObject.SetActive(!isUnlocked);
@@ -66,7 +77,7 @@ public class ClimateSelectorScreen : MonoBehaviour
         }
 
         if (_unlockedCountLabel)
-            _unlockedCountLabel.text = $"{unlocked}/{_prog.AvailableClimates.Count} niveles";
+            _unlockedCountLabel.text = string.Format(Get("climate.unlocked_count"), unlocked, _prog.AvailableClimates.Count);
     }
 
     // Mutes a swatch toward a fixed mid-gray for the locked state — see the

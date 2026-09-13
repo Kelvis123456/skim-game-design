@@ -11,13 +11,14 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
     SaveData _data = new();
     const string FILENAME = "skim_save.json";
 
-    // (type, target, rewardConchas, description) — rotates by day-of-epoch so every
-    // player sees the same challenge on a given day without needing a server.
-    static readonly (DailyChallengeType type, float target, int reward, string desc)[] CHALLENGE_TEMPLATES =
+    // (type, target, rewardConchas, descriptionKey) — rotates by day-of-epoch so
+    // every player sees the same challenge on a given day without needing a
+    // server. descriptionKey is resolved through ILocalizationSystem below.
+    static readonly (DailyChallengeType type, float target, int reward, string descKey)[] CHALLENGE_TEMPLATES =
     {
-        (DailyChallengeType.DistanceSingleThrow, 100f, 120, "Recorre 100m en una sola tirada"),
-        (DailyChallengeType.SkipsSingleThrow,     15f,  100, "Logra 15 rebotes en una sola tirada"),
-        (DailyChallengeType.SessionDistance,      300f, 150, "Acumula 300m de distancia hoy"),
+        (DailyChallengeType.DistanceSingleThrow, 100f, 120, "challenge.desc.0"),
+        (DailyChallengeType.SkipsSingleThrow,     15f,  100, "challenge.desc.1"),
+        (DailyChallengeType.SessionDistance,      300f, 150, "challenge.desc.2"),
     };
 
     public SaveData Data => _data;
@@ -138,7 +139,8 @@ public class ProgressionSystemImpl : MonoBehaviour, IProgressionSystem
             var def = CHALLENGE_TEMPLATES[int.Parse(p.ChallengeId)];
             long secondsIntoDay = System.DateTimeOffset.UtcNow.ToUnixTimeSeconds() % 86400L;
             var reset = System.TimeSpan.FromSeconds(86400L - secondsIntoDay);
-            return new DailyChallengeInfo(def.type, def.desc, p.Progress, def.target, def.reward, p.Completed, reset);
+            string desc = ServiceLocator.TryGet<ILocalizationSystem>(out var loc) ? loc.Get(def.descKey) : def.descKey;
+            return new DailyChallengeInfo(def.type, desc, p.Progress, def.target, def.reward, p.Completed, reset);
         }
     }
 

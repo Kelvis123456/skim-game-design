@@ -48,6 +48,33 @@ public static class SKIMSetup
         Debug.Log("[SKIM] BonusZoneSystemImpl ensured on Systems in Boot.unity");
     }
 
+    [MenuItem("SKIM/Add Localization System")]
+    public static void AddLocalizationSystem()
+    {
+        const string path = "Assets/_Project/Scenes/Boot.unity";
+        var scene = EditorSceneManager.OpenScene(path, OpenSceneMode.Single);
+
+        var systemsGO = GameObject.Find("Systems");
+        if (systemsGO == null) { Debug.LogError("[SKIM] Systems GameObject not found in Boot.unity."); return; }
+
+        if (systemsGO.GetComponent<LocalizationSystemImpl>() == null)
+            systemsGO.AddComponent<LocalizationSystemImpl>();
+
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene);
+        Debug.Log("[SKIM] LocalizationSystemImpl ensured on Systems in Boot.unity");
+    }
+
+    // Attaches a LocalizedText to chrome that's never re-set at runtime by any
+    // controller — the component reads/re-applies the current language's
+    // string for `key` whenever it changes.
+    static void Localize(TMPro.TMP_Text tmp, string key)
+    {
+        if (tmp == null) return;
+        var loc = tmp.gameObject.GetComponent<LocalizedText>() ?? tmp.gameObject.AddComponent<LocalizedText>();
+        loc.Key = key;
+    }
+
     // ─────────────────────────── LIVE SCENE PATCHES ────────────────────
 
     // CreateGameScene() below only runs once, the first time Game.unity doesn't
@@ -124,6 +151,7 @@ public static class SKIMSetup
             rect.pivot = new Vector2(0.5f, 1f);
             rect.anchoredPosition = new Vector2(0f, -62f);
             rect.sizeDelta = new Vector2(300f, 30f);
+            Localize(tmp, "hud.points_caption");
         }
     }
 
@@ -169,11 +197,12 @@ public static class SKIMSetup
         fillImg.raycastTarget = false;
         fill.transform.SetAsFirstSibling(); // drawn right after the parent's own border graphic
 
-        RestyleResultLabel(postLaunch.transform, "DistResult", "DIST_CAPTION", "DISTANCIA", 72f, FontStyles.Bold, Color.white, new Vector2(0f, 190f));
+        RestyleResultLabel(postLaunch.transform, "DistResult", "DIST_CAPTION", "DISTANCIA", 72f, FontStyles.Bold, Color.white, new Vector2(0f, 190f),
+            "postlaunch.distance_caption");
         RestyleResultLabel(postLaunch.transform, "SkipsResult", "SKIPS_CAPTION", "SALTOS", 40f, FontStyles.Normal,
-            new Color(0.553f, 0.706f, 0.831f), new Vector2(-190f, 40f));
+            new Color(0.553f, 0.706f, 0.831f), new Vector2(-190f, 40f), "postlaunch.skips_caption");
         RestyleResultLabel(postLaunch.transform, "ScoreResult", "SCORE_CAPTION", "PUNTOS", 40f, FontStyles.Normal,
-            new Color(0.553f, 0.706f, 0.831f), new Vector2(190f, 40f));
+            new Color(0.553f, 0.706f, 0.831f), new Vector2(190f, 40f), "hud.points_caption");
 
         // No separate chip background here: RecordBadge must stay both the
         // GameObject transform.Find("RecordBadge") looks up AND the direct holder
@@ -216,12 +245,13 @@ public static class SKIMSetup
                 retryText.fontStyle = FontStyles.Bold;
                 retryText.color = new Color(0.02f, 0.05f, 0.09f);
                 retryText.characterSpacing = 4f;
+                Localize(retryText, "postlaunch.retry");
             }
         }
     }
 
     static void RestyleResultLabel(Transform parent, string labelName, string captionName, string captionText,
-                                    float labelSize, FontStyles style, Color labelColor, Vector2 pos)
+                                    float labelSize, FontStyles style, Color labelColor, Vector2 pos, string captionKey = null)
     {
         var labelT = parent.Find(labelName);
         if (labelT == null) return;
@@ -253,6 +283,7 @@ public static class SKIMSetup
         crect.anchorMin = crect.anchorMax = new Vector2(0.5f, 1f);
         crect.pivot = new Vector2(0.5f, 1f);
         crect.anchoredPosition = new Vector2(0f, labelSize * 0.75f);
+        if (captionKey != null) Localize(caption, captionKey);
         crect.sizeDelta = new Vector2(380f, 30f);
     }
 
@@ -490,6 +521,7 @@ public static class SKIMSetup
         systemsGO.AddComponent<ProgressionSystemImpl>();
         systemsGO.AddComponent<VFXSystemImpl>();
         systemsGO.AddComponent<EconomySystemImpl>();
+        systemsGO.AddComponent<LocalizationSystemImpl>();
 
         EditorSceneManager.SaveScene(scene, path);
         Debug.Log("[SKIM] Boot.unity created");
