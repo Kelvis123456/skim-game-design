@@ -14,6 +14,6 @@ Fonts included in that folder, with the license file that ships next to each one
 | Roboto Bold | Apache License 2.0 |
 | Unity | SIL OFL 1.1 |
 | Liberation Sans (TextMesh Pro/Fonts) | SIL OFL 1.1 |
-| Electronic Highway Sign | license to confirm (no license file in the package) |
+| Electronic Highway Sign | Sample font from Unity's TextMesh Pro "Examples & Extras", no license file. Not used by any scene, prefab or material in this project; delete the Examples & Extras folder before a public build. |
 
 The PNGs under `SKIM/Assets/_Project/Art/Generated` (icon, splash, UI cards) are generated for this project; no outside art is used there.
